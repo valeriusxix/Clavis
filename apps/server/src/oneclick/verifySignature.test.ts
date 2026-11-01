@@ -6,6 +6,11 @@ import {
   STAGING_NON_DRY_QUOTE,
 } from "./__fixtures__/sdk-staging-quotes";
 import type { QuoteResponse } from "./types";
+// Real MAINNET dry quote (public, wNEAR -> NEAR USDC), captured by `pnpm smoke:quote` on 2026-11-01.
+// Confidential (basic) quotes need credentials, so this one was requested without `confidentiality`.
+import mainnetPublicDryQuoteJson from "./__fixtures__/mainnet-public-dry-quote.json";
+
+const MAINNET_PUBLIC_DRY_QUOTE = mainnetPublicDryQuoteJson as unknown as QuoteResponse;
 
 const withQuote = (r: QuoteResponse, patch: Partial<QuoteResponse["quote"]>): QuoteResponse => ({
   ...r,
@@ -44,5 +49,22 @@ describe("checkQuoteSignature (real staging quotes from the official SDK tests)"
 
   it("rejects a staging-signed quote under the production key", () => {
     expect(checkQuoteSignature(STAGING_DRY_QUOTE, ONECLICK_MANAGER_PUBLIC_KEY).valid).toBe(false);
+  });
+});
+
+describe("checkQuoteSignature (real mainnet quote, production key)", () => {
+  it("accepts the saved mainnet dry quote under the production 1Click key", () => {
+    const res = checkQuoteSignature(MAINNET_PUBLIC_DRY_QUOTE);
+    expect(res.publicKey).toBe(ONECLICK_MANAGER_PUBLIC_KEY);
+    expect(res.valid).toBe(true);
+  });
+
+  it("rejects it when amountOut is tampered", () => {
+    const tampered = withQuote(MAINNET_PUBLIC_DRY_QUOTE, { amountOut: "9247386" });
+    expect(checkQuoteSignature(tampered).valid).toBe(false);
+  });
+
+  it("rejects it under the staging key", () => {
+    expect(checkQuoteSignature(MAINNET_PUBLIC_DRY_QUOTE, STAGING_MANAGER_PUB_KEY).valid).toBe(false);
   });
 });

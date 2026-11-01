@@ -4,14 +4,21 @@
 //   3. print the full JSON, then verify the quote signature with the official SDK verifier.
 // Nothing executes and no funds move: dry quotes return no deposit address.
 //
-// Usage: pnpm smoke:quote [--amount 1] [--dest-chain near] [--save path.json]
-// Env:   ONECLICK_BASE_URL, ONECLICK_API_KEY (optional), SMOKE_ACCOUNT (NEAR account used as
-//        recipient/refundTo in the dry quote; nothing is sent to it).
+// Usage: pnpm smoke:quote [--amount 1] [--dest-chain near] [--save path.json] [--no-public-fallback]
+// Env:   ONECLICK_BASE_URL, ONECLICK_API_KEY (optional), SMOKE_ACCOUNT (an EXISTING mainnet NEAR
+//        account used as recipient/refundTo in the dry quote; nothing is sent to it. A non-existent
+//        account makes 1Click answer HTTP 400 "Internal server error").
+//
+// Live finding (2026-11-01): 1Click answers HTTP 401 "User authentication is required for
+// confidential intent quotes" when confidentiality is basic/advanced and no credentials are sent.
+// In that case this script says so and, unless --no-public-fallback is given, requests a PUBLIC dry
+// quote instead so the signature check still runs against a real mainnet quote. The fallback is
+// labeled PUBLIC everywhere and the script exits with code 3 (not 0).
 import { writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { loadDotEnv, parseConfig } from "../apps/server/src/config";
 import { OneClickClient, OneClickError } from "../apps/server/src/oneclick/client";
-import type { QuoteRequest, TokenResponse } from "../apps/server/src/oneclick/types";
+import type { QuoteRequest, QuoteResponse, TokenResponse } from "../apps/server/src/oneclick/types";
 import { checkQuoteSignature } from "../apps/server/src/oneclick/verifySignature";
 
 const { values: args } = parseArgs({
@@ -19,6 +26,7 @@ const { values: args } = parseArgs({
     amount: { type: "string", default: "1" },
     "dest-chain": { type: "string", default: "near" },
     save: { type: "string" },
+    "no-public-fallback": { type: "boolean", default: false },
   },
 });
 
@@ -36,7 +44,7 @@ async function main() {
   loadDotEnv();
   const config = parseConfig();
   const client = new OneClickClient({ baseUrl: config.ONECLICK_BASE_URL, apiKey: config.ONECLICK_API_KEY });
-  const account = process.env.SMOKE_ACCOUNT?.trim() || "clavis-smoke.near";
+  const account = process.env.SMOKE_ACCOUNT?.trim() || "intents.near";
 
   hr("1Click target");
   console.log(`base URL : ${config.ONECLICK_BASE_URL}`);
@@ -75,12 +83,31 @@ async function main() {
     referral: "clavis",
   };
 
-  hr("POST /v0/quote (request)");
+  hr("POST /v0/quote (request, confidentiality: basic)");
   console.log(JSON.stringify(request, null, 2));
 
-  const response = await client.getQuote(request);
+  let response: QuoteResponse;
+  let mode: "basic" | "public-fallback" = "basic";
+  try {
+    response = await client.getQuote(request);
+  } catch (err) {
+    if (!(err instanceof OneClickError) || err.status !== 401 || args["no-public-fallback"]) throw err;
+    hr("Confidential quote REFUSED (HTTP 401)");
+    console.log(err.message);
+    console.log(
+      client.hasApiKey
+        ? "An API key was sent but 1Click still refused the confidential quote."
+        : "No ONECLICK_API_KEY is set. 1Click requires credentials for confidential quotes.",
+    );
+    console.log("Falling back to a PUBLIC dry quote so the signature check runs on a real mainnet quote.");
+    mode = "public-fallback";
+    const { confidentiality: _omit, ...publicRequest } = request;
+    hr("POST /v0/quote (request, PUBLIC fallback — not confidential)");
+    console.log(JSON.stringify(publicRequest, null, 2));
+    response = await client.getQuote(publicRequest as QuoteRequest);
+  }
 
-  hr("POST /v0/quote (full response)");
+  hr(`POST /v0/quote (full response${mode === "public-fallback" ? ", PUBLIC fallback" : ""})`);
   console.log(JSON.stringify(response, null, 2));
 
   if (args.save) {
@@ -90,6 +117,7 @@ async function main() {
 
   hr("Summary");
   const q = response.quote;
+  console.log(`mode                   : ${mode === "basic" ? "CONFIDENTIAL (basic)" : "PUBLIC fallback (confidential quote was refused)"}`);
   console.log(`confidentiality echoed : ${response.quoteRequest?.confidentiality ?? "(not echoed)"}`);
   console.log(`amountIn               : ${q.amountInFormatted} ${origin.symbol} ($${q.amountInUsd})`);
   console.log(`amountOut              : ${q.amountOutFormatted} ${dest.symbol} ($${q.amountOutUsd})`);
@@ -105,6 +133,7 @@ async function main() {
   console.log(`RESULT      : ${check.valid ? "VALID ✓ (signed by 1Click)" : "INVALID ✗"}`);
 
   if (!check.valid) process.exitCode = 2;
+  else if (mode === "public-fallback") process.exitCode = 3; // signature OK, but not a confidential quote
 }
 
 main().catch((err: unknown) => {
