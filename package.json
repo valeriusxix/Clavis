@@ -1,0 +1,25 @@
+{
+  "name": "clavis",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Traders keep their edge private, prove their PnL in public, and sell access to the people they choose.",
+  "type": "module",
+  "license": "MIT",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @clavis/server --filter @clavis/web dev",
+    "build": "pnpm -r --if-present build",
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck && tsc -p scripts/tsconfig.json",
+    "smoke:quote": "tsx scripts/smoke-quote.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

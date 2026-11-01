@@ -1,0 +1,25 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# dependencies
+node_modules/
+
+# local data (SQLite etc.)
+data/
+
+# build output
+dist/
+target/
+*.tsbuildinfo
+
+# logs / OS / editor
+*.log
+.DS_Store
+.vscode/
+.idea/
+
+# third-party agent skills (restore with: npx skills experimental_install — see skills-lock.json)
+.claude/skills/
+.agents/

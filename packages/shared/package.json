@@ -1,0 +1,16 @@
+{
+  "name": "@clavis/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Hash chain, canonical JSON and types shared by the Clavis web app and server.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}
