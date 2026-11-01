@@ -3,22 +3,61 @@
 Answers to the "known unknowns" in AGENT.md section 16, plus other build decisions.
 Each entry says where the answer came from and how sure we are.
 
-## Sources used in Phase 0 (2026-11-01)
+## Sources
 
-| Source | What it is | Trust |
+| Source | What it is | Notes |
 |---|---|---|
-| `near-intents` agent skill (`near/agent-skills` @ `cb32b6a`), installed with `npx skills@1.7.4 add near/agent-skills --skill near-intents` into `.claude/skills/near-intents` | Official NEAR agent skill | Primary |
-| `github.com/defuse-protocol/one-click-sdk-typescript` @ `ae8b24e` (2026-09-22), npm `0.1.26` | Official 1Click SDK. Models are generated from the 1Click OpenAPI spec. `src/quote-signature.ts` is the reference signature verifier. | Primary |
-| Snapshot of `docs.near-intents.org` taken 2026-09-03, mirrored at `github.com/CharlesHoskinson/Moriarty/raw/sources/near-intents-docs-2026-09-03` (with HTTP retrieval receipts) | Third-party copy of the official docs | Secondary. Re-check against the live docs. |
-| `docs.near-intents.org`, `1click.chaindefuser.com` (live) | Live docs + API | **Not reachable from the build sandbox** (egress proxy returns 403). See "Environment blockers". |
+| `near-intents` agent skill (`near/agent-skills` @ `cb32b6a`), restored from `skills-lock.json` | Official NEAR agent skill | Not vendored: the source repo has no LICENSE. |
+| `github.com/defuse-protocol/one-click-sdk-typescript` @ `ae8b24e` (2026-09-22), npm `0.1.26` | Official 1Click SDK. `src/quote-signature.ts` is the reference verifier. | |
+| Live `docs.near-intents.org` and `https://1click.chaindefuser.com/docs/v0/openapi.yaml`, read 2026-11-01 | Primary | Before network access was opened, a 2026-09-03 snapshot was used. The live verify-signature and near-token pages match that snapshot. **fee-config changed** (see #6). |
+| Live 1Click API probes, 2026-11-01 (dry quotes only) | Ground truth | Results below. |
+
+---
+
+## LIVE FINDING (2026-11-01): confidential quotes need credentials
+
+Dry quote probes, `wNEAR -> USDC (NEAR)`, 1 wNEAR, no API key:
+
+| `confidentiality` | Recipient / refundTo | HTTP | Body |
+|---|---|---|---|
+| `basic` | `intents.near` | **401** | `User authentication is required for confidential intent quotes` |
+| `advanced` | `clavis-smoke.near` | **401** | same |
+| `basic` + `X-API-Key: <fake>` | `intents.near` | 401 | `Invalid token` |
+| `basic` + `Authorization: Bearer <fake>` | `intents.near` | 401 | `Invalid token` |
+| omitted / `public` | `intents.near` | **201** | signed quote, echoes `confidentiality: "public"` |
+| omitted / `public` | `clavis-smoke.near` (does not exist) | 400 | `Internal server error`. **The recipient must be an existing account.** |
+
+Context from the live docs:
+- Changelog, **2026-10-27**: "1Click swaps roll out as confidential only. The API is unchanged."
+  `swapDetails.nearTxHashes` lists the public shield and unshield transactions. The swap itself settles on
+  the NEAR Private Shard. Unauthenticated **public** quotes are still served (above).
+- OpenAPI `/v0/quote` security: `X-API-Key` (partner, recommended) or `JWT-auth` (bearer, legacy).
+  A separate `User-Session` bearer token (from `POST /v0/auth/authenticate`, a signed empty intent) is
+  documented only for `/v0/account/*`.
+- OpenAPI `confidentiality`: "PUBLIC is the default; BASIC or ADVANCED request Confidential Intents
+  handling."
+
+**Impact:** AGENT.md 10.4 says the confidential dry quote "works without an API key". As of today it
+does not. Definition of done #4 (a judge with no keys sees a real confidential quote) needs one of:
+1. **Partner API key** (`ONECLICK_API_KEY`, from partners.near-intents.org; human action). Not yet
+   tested whether a partner key satisfies "User authentication". We need it for real-mode fees anyway.
+2. **Server-side User-Session token**, signed with a server-held key (e.g. a throwaway `raw_ed25519`
+   implicit account, which needs no on-chain registration). The docs do not document this for
+   `/v0/quote`. A probe was prepared but **not run**: the sandbox's permission check blocked it
+   pending the human's approval.
+3. **Honest fallback:** with no credentials, the Trade page shows a clearly labelled **PUBLIC** dry quote
+   and explains that confidential quotes need a key. `scripts/smoke-quote.ts` already does this (exit 3).
+
+Recommendation: (1) as the main path, plus (3) so `pnpm dev` with no keys still works and stays honest.
+Pending the human's decision.
 
 ---
 
 ## Section 16 known unknowns
 
-### 1. Exact signature verification steps: RESOLVED (still needs one live mainnet quote)
+### 1. Exact signature verification steps: RESOLVED, verified on a real mainnet quote
 
-The "Verify Quote Signatures" doc says to use `verifyQuoteSignature()` from
+The "Verify Quote Signatures" doc (live, unchanged) says to use `verifyQuoteSignature()` from
 `@defuse-protocol/one-click-sdk-typescript` **>= 0.1.24**. What it does (SDK 0.1.26 source):
 
 1. Build a signed request object from `quoteRequest`, using only these fields:
@@ -26,117 +65,117 @@ The "Verify Quote Signatures" doc says to use `verifyQuoteSignature()` from
    refundTo, refundType, recipient, recipientType, deadline`. It also adds
    `quoteWaitingTimeMs, referral, virtualChainRecipient, virtualChainRefundRecipient,
    customRecipientMsg`, but only when they are truthy.
-   It **leaves out** `confidentiality`, `appFees`, `depositMode`, `sessionId`, `connectedWallets`.
+   It **leaves out** `confidentiality`, `appFees`, `depositMode`, `sessionId`, `connectedWallets`,
+   and the new `insured` echo field.
 2. Build a signed quote object from `quote`:
    - dry quote: `amountIn, amountInFormatted, amountInUsd, minAmountIn, amountOut,
      amountOutFormatted, amountOutUsd, minAmountOut`
    - non-dry quote: all of the above, plus `depositAddress, depositMemo, deadline,
      timeWhenInactive, timeEstimate, refundFee, withdrawFee`
 3. `message = base58(sha256(json-stable-stringify({ ...request, ...quote, timestamp })))`
-4. Check the `ed25519` signature (`response.signature`, `ed25519:<base58>`) over the UTF-8 bytes of
-   `message`, against the 1Click manager key. The production key hard-coded in the SDK is
-   `ed25519:reYaWhvwu8Jzo3WUM3zhn6VrhuMEF4eADL17qtRVifc`.
-
-The doc's prose says `stringify({ ...quoteRequest, ...quoteResponse, timestamp })`. The SDK it points
-to uses the explicit field subset above. We follow the SDK.
+4. Check the `ed25519` signature over the UTF-8 bytes of `message`, against the 1Click manager key.
+   The production key is `ed25519:reYaWhvwu8Jzo3WUM3zhn6VrhuMEF4eADL17qtRVifc` (hard-coded in the SDK).
 
 **Decision:** `apps/server/src/oneclick/verifySignature.ts` calls the SDK's `verifyQuoteSignature`
-directly. We do not re-implement it. The SDK is pinned to exactly `0.1.26`.
-Tests: `verifySignature.test.ts` uses the real staging quotes from the SDK's own test suite (6 tests:
-valid dry, valid non-dry, tampered amount, tampered deposit address, bad signature, wrong key).
-**TODO (Phase 0, once unblocked):** save one real mainnet dry quote and one real non-dry quote as
-fixtures, and test them against the production key.
+directly. The SDK is pinned to exactly `0.1.26`.
+**Tests (9):**
+- the SDK's real staging quotes under the staging key;
+- a real **mainnet** dry quote captured 2026-11-01 (`__fixtures__/mainnet-public-dry-quote.json`),
+  valid under the **production** key;
+- tampered amounts and deposit address rejected;
+- bad or missing signatures rejected;
+- the wrong key rejected.
 
-**Consequences for Clavis (must be honest in the UI and README):**
-- `confidentiality` is **not** covered by the signature. "1Click-signed ✓" proves that 1Click quoted
-  those assets, amounts, recipient and timestamp. It does **not** prove the swap was confidential.
+**Consequences (must be honest in the UI and README):**
+- `confidentiality` is **not** covered by the signature. "1Click-signed ✓" proves the assets, amounts,
+  recipient and timestamp, not that the swap was confidential.
 - `appFees` is not covered either.
-- `/v0/status` returns `quoteResponse`, and the SDK test shows that object verifies too. So the
-  signature can be re-checked from the status response.
+- `/v0/status` returns `quoteResponse`, which also verifies (SDK test).
 
 ### 2. Final amounts in the status response: PARTIAL (confirm in Phase 4)
 
-Per the SDK models (`GetExecutionStatusResponse`, `SwapDetails`), `GET /v0/status` returns
+Per the SDK and OpenAPI models, `GET /v0/status` returns
 `{ correlationId, quoteResponse, status, updatedAt, swapDetails }`. `swapDetails` has
 **optional** `amountIn, amountInFormatted, amountInUsd, amountOut, amountOutFormatted, amountOutUsd`
-("Exact amount ... after the trade was settled"). It also has `slippage, refundedAmount*,
-depositedAmount*, withdrawFee, referral, intentHashes, nearTxHashes, originChainTxHashes,
-destinationChainTxHashes`.
+("exact amount after the trade was settled"). It also has `slippage, refundedAmount*, depositedAmount*,
+withdrawFee, referral, intentHashes, nearTxHashes, originChainTxHashes, destinationChainTxHashes`.
+Since 2026-10-27, `nearTxHashes` holds only the shield and unshield transactions.
 **Plan:** on `SUCCESS`, use `swapDetails` amounts when present. Otherwise use the quote amounts and
-mark the row "quoted". Check this against a real response in Phase 4.
+mark the row "quoted".
 
-### 3. Best origin token for a one-call wallet deposit (wNEAR vs NEAR-native USDC): OPEN
+### 3. Best origin token for a one-call wallet deposit: PARTIAL
 
-This needs live dry quotes, which are blocked right now. What we know so far:
-- With `originAsset: nep141:wrap.near`, the user sends **wNEAR** to `depositAddress` with
-  `ft_transfer` (1 yoctoNEAR attached). A user holding native NEAR needs `near_deposit` +
-  `ft_transfer` on `wrap.near`. The skill (`deposit-near.md`) shows both as two actions in **one
-  transaction**, so it is still one wallet confirmation.
-- NEAR-native USDC is a single `ft_transfer`. Unknown: whether the deposit address needs a
-  `storage_deposit` first.
-- The docs' "Using NEAR tokens" page says wrapping "is handled for you" with 1Click. That seems to
-  conflict with the skill. To resolve it, check `/v0/tokens` for a native-NEAR asset id.
+From the live `/v0/tokens` (210 tokens):
+- **There is no native-NEAR asset id.** NEAR on NEAR is only `nep141:wrap.near` (wNEAR, 24 decimals).
+  A user holding native NEAR must `near_deposit` + `ft_transfer` on `wrap.near`. Per the skill's
+  `deposit-near.md`, these are two actions in **one transaction**, so it is still one wallet
+  confirmation.
+- NEAR-native USDC is `nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1`
+  (6 decimals). As origin, it is a single `ft_transfer`. USDT is `nep141:usdt.tether-token.near`.
+- Dry quote, 1 wNEAR -> USDC: on NEAR, `withdrawFee 0` and `timeEstimate ~20s`. On Arbitrum,
+  `withdrawFee 5300` (0.0053 USDC) and ~19s. So NEAR-native destinations avoid withdraw fees.
 
-**Tentative:** wNEAR origin, as in the spec. Revisit with real dry quotes.
+**Decision:** default pair **wNEAR -> NEAR-native USDC** (both sides on NEAR). Still open: whether the
+deposit address needs `storage_deposit` before an `ft_transfer`. Check with the first real
+(non-dry) quote in Phase 4.
 
-### 4. `basic` vs `advanced` confidentiality: PARTIAL, AND A RISK
+### 4. `basic` vs `advanced`: PARTIAL
 
-- Docs (Sep 2026) list `public` (default), `basic` and `advanced`, with **no documented
-  difference** between `basic` and `advanced`.
-- SDK model comment on `QuoteRequest.confidentiality`: *"Invite-only for now: if set, API may
-  return an invite-only message until rollout is enabled for your integration."*
-- Changelog: 2026-07-01 added the `confidentiality` parameter. 2026-07-13 "Confidential Intents is
-  live for B2B partners".
-
-**Decision:** always send `basic`.
-**Risk:** an unauthenticated or non-partner quote with `confidentiality: "basic"` may be refused.
-The first live smoke run will show this. If it is refused, we need a partner API key from
-`partners.near-intents.org` (human action) or an invite.
+The live docs and OpenAPI list `public` (default), `basic` and `advanced`, with **no documented
+difference** between `basic` and `advanced`. Both currently return 401 without credentials.
+**Decision:** always send `basic`. Retest `advanced` once we have credentials.
 
 ### 5. Native view keys before Nov 14: OPEN (none found yet)
 
-The docs snapshot and changelog (through 2026-09-03) mention user auth (NEP-413), private balances,
-and transaction history that is "invite-only". They do not mention view keys.
-**Decision:** keep the `DisclosureAdapter` interface with `ClavisRelayAdapter`. Re-check the live
-changelog before Nov 14.
+The live changelog (through 2026-10-27) has nothing on view keys. User-Session auth exists for
+private balances. History is invite-only.
+**Decision:** keep `DisclosureAdapter` + `ClavisRelayAdapter`. Re-check before Nov 14.
 
-### 6. `appFees` recipient format for P1: RESOLVED (docs snapshot + SDK model)
+### 6. `appFees` recipient format (P1): RESOLVED, and the fee rules changed
 
-- `recipient`: "Any NEAR-supported address (named account like `alice.near`, implicit account, or
-  EVM-like address)". The SDK model says: "Account ID within Intents to which this fee will be
-  transferred". So fees are credited inside Intents (`intents.near` balance), not to the wallet.
-  Confirm this in P1.
-- `fee`: basis points, from `0` to `500`. It is charged from the **input** token.
-- **50/50 revenue share by default.** `fee: 10` means 5 bps to the recipient and 5 bps to 1Click.
-  So the spec's `appFees: [{ recipient: <trader>, fee: 10 }]` pays the trader 5 bps.
+- `recipient`: "Any NEAR-supported address (named account, implicit account, or EVM-like address)".
+  The SDK model calls it "Account ID within Intents", so fees land in the recipient's Intents balance.
+- `fee`: **integer** basis points, charged from the input token. The combined total, including
+  1Click's share, cannot exceed **500 bps**.
+- **With an API key:** split 50/50, but 1Click's half has a **20 bps minimum** (1 bp for
+  USDC/USDT/DAI pairs and same-asset routes). So `fee: 10` gives the trader **5 bps** and charges
+  the user 25 bps total.
+- **Without an API key:** no split. The recipient keeps the full `fee` and 1Click adds 25 bps. So
+  `fee: 10` gives the trader 10 bps and charges 35 bps.
+- Echo quirk: public quotes echo an `appFees` entry for 1Click's own recipient
+  (`5880ad2b…47dd`, `fee: 20`). It is not covered by the signature.
 
 ---
 
+## Phase 1 contract decisions (from the human, 2026-11-01)
+
+- **`withdraw_platform()`**: new **owner-only** method. Transfers `platform_balance` to `owner_id`.
+  It is zeroed before the transfer, with the same restore-on-failure callback as `withdraw()`.
+  This adds one method to AGENT.md 7.2.
+- **`withdraw()` callback:** zero the caller's balance before the transfer promise. Then chain a
+  private callback (`#[private]`) that **restores the balance if the transfer failed**, and emits
+  `withdrawn` only on success.
+
 ## Other decisions
 
-- **1Click auth header:** `X-API-Key: <jwt>`. Per the docs' API Keys page, `Authorization: Bearer`
-  is also accepted. The header is sent only when `ONECLICK_API_KEY` is set. The sources disagree on
-  the extra fee without a key (0.2% vs 0.25%). We just show what the quote returns.
+- **1Click auth header:** `X-API-Key: <key>` (OpenAPI: recommended; Bearer is legacy). It is sent only
+  when `ONECLICK_API_KEY` is set. Without a key, 1Click adds **25 bps** (live docs).
 - **HTTP client:** plain `fetch` (`apps/server/src/oneclick/client.ts`), with retry and backoff on
-  5xx and network errors, and no retry on 4xx. The SDK is used only for types and signature
-  verification.
-- **`TokenResponse.price` is a number** (SDK/OpenAPI model and docs example), not a string.
-- **Node >= 22.12** (spec says 20+). Node 20 reached end of life on 2026-04-30. vite 8 needs
-  `^20.19 || >=22.12` and vitest 5 needs `>=22.12`. README "Requirements" will say Node 22.12+.
-- **Package versions:** resolved by `pnpm add` from the registry on 2026-11-01. Exact versions are
-  in `pnpm-lock.yaml` (typescript 7.0.2, vite 8.3.5, react 19.3.1, fastify 5.12.7, zod 4.6.7,
-  vitest 5.0.5, tsx 4.23.15).
-- **One `.env` at the repo root.** The server loads it with `process.loadEnvFile` (if present). Vite
-  reads it via `envDir: "../.."`. Missing `.env` means demo defaults (`DEMO_MODE=true`).
-- **Wallet library: deferred to Phase 3.** The spec says Wallet Selector. The NEAR `near-dapp` skill
-  now points to `@hot-labs/near-connect`. We decide after reading docs.near.org (blocked for now).
-- **NEAR JS:** the `near-api-js` skill targets near-api-js v7. Confirm in Phase 1/2.
+  5xx and network errors, and no retry on 4xx. The SDK is used for types and signature verification.
+- **`TokenResponse.price` is a number** (OpenAPI), not a string.
+- **Dry-quote recipient must exist.** `scripts/smoke-quote.ts` defaults `SMOKE_ACCOUNT` to
+  `intents.near` (a dry quote sends nothing). The app will use the trader's own account.
+- **Node >= 22.12** (AGENT.md says 20+). Node 20 reached end of life on 2026-04-30. vite 8 needs
+  `^20.19 || >=22.12`, and vitest 5 needs `>=22.12`. The README "Requirements" will say Node 22.12+.
+- **Package versions:** resolved by `pnpm add` on 2026-11-01. Exact versions are in `pnpm-lock.yaml`.
+- **One `.env` at the repo root.** The server uses `process.loadEnvFile`. Vite uses `envDir: "../.."`.
+  A missing `.env` means demo defaults.
+- **Wallet library: deferred to Phase 3.** The spec says Wallet Selector, but NEAR's `near-dapp` skill
+  now points to `@hot-labs/near-connect`. Decide after reading docs.near.org.
+- **NEAR JS:** the `near-api-js` skill targets v7. Confirm in Phase 1/2.
 
-## Environment blockers (as of 2026-11-01)
+## Environment
 
-The build sandbox's egress policy denies these hosts (HTTP 403 on CONNECT):
-`1click.chaindefuser.com`, `docs.near-intents.org`, `docs.near.org`, `rpc.testnet.near.org`,
-`rpc.mainnet.fastnear.com` / `test.rpc.fastnear.com`, `testnet.nearblocks.io`,
-`partners.near-intents.org`, `explorer.near-intents.org`, `nearhackathon.com`.
-These work: npm registry, crates (`index.crates.io`, `static.crates.io/crates/...`),
-`static.rust-lang.org`, and GitHub (git and raw).
+Network access was opened on 2026-11-01. 1Click, the NEAR docs and NEAR RPC are reachable.
+`testnet.nearblocks.io` still answers 403 to curl (likely bot protection). It is only needed for
+explorer links, which the browser opens.
