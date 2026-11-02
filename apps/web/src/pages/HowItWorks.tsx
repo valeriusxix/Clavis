@@ -59,7 +59,10 @@ export function HowItWorks() {
           <li>Selling X: realized PnL += what you received (USD) − what X cost you (average cost basis).</li>
           <li>Buying Y: Y's holdings and cost basis go up by what you received.</li>
           <li>Unrealized PnL = current value of holdings − their cost basis. Stablecoins count at $1.</li>
-          <li>PnL % = total PnL ÷ peak capital deployed. Win rate = profitable sells ÷ all sells.</li>
+          <li>
+            PnL % = total PnL ÷ peak capital deployed. Win rate = profitable closes ÷ all closes, where a close is selling a non-stablecoin
+            asset you bought earlier (buying with stablecoins is not a close).
+          </li>
         </ul>
       </Card>
 

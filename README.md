@@ -120,7 +120,7 @@ Every trade sells some amount of asset X and receives some amount of asset Y, wi
 - **Selling X:** realized PnL += what you received (USD) − what X cost you (average cost basis).
 - **Buying Y:** Y's holdings and cost basis go up by what you received.
 - **Unrealized PnL** = current value of holdings − their cost basis.
-- **PnL %** = total PnL ÷ peak capital deployed. **Win rate** = profitable sells ÷ all sells.
+- **PnL %** = total PnL ÷ peak capital deployed. **Win rate** = profitable closes ÷ all closes. A close is selling a non-stablecoin asset you bought earlier; buying with stablecoins is not a close (otherwise every DCA buy would count as a losing sell), though its fees still count in PnL.
 
 Fees are included automatically because we use what was actually received. Full spec and tests are in `apps/server/src/pnl/` (the exact rules for edge cases are in `docs/DECISIONS.md`).
 
