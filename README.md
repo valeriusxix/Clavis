@@ -96,7 +96,7 @@ Follower ──▶ buy_key() on the contract ──▶ feed unlocks ──▶ "V
 2. **Record and prove.** Clavis stores each trade with 1Click's **signed quote**, so trades can't be invented.
 3. **Commit.** Each trader's trade log forms a **hash chain** (`h0 = sha256("clavis:v1:" + trader)`, each next hash covers the previous one and the entry). The latest hash is written to the Clavis contract, so history can't be rewritten after keys are sold.
 4. **Sell access.** Followers buy a key on-chain. The server only serves a trader's feed to accounts where the contract says `has_access = true`.
-5. **Verify.** Key holders recompute the hash chain in their own browser and check it against the contract. The browser reads the contract directly from a NEAR RPC node, not through the Clavis server.
+5. **Verify.** Key holders recompute the hash chain in their own browser and check it against the contract. The browser reads the contract directly from a NEAR RPC node, not through the Clavis server, and the contract id is fixed in the web build (`VITE_CLAVIS_CONTRACT_ID`), so the server can't point the check at another contract.
 
 **Why `confidentiality: "basic"`:** the 1Click docs list `public`, `basic` and `advanced` and document no difference between `basic` and `advanced`. `basic` is the default the spec asks for. Details and the live API probes are in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 

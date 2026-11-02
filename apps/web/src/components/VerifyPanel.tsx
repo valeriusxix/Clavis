@@ -1,4 +1,4 @@
-import { chainHashes, checkLogShape, type LogEntry } from "@clavis/shared";
+import { chainHashes, checkLogShape, verificationContract, type LogEntry } from "@clavis/shared";
 import { CircleCheck, CircleMinus, CircleX, ExternalLink, FlaskConical, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { api, type TraderLog } from "../lib/api";
@@ -10,10 +10,14 @@ type State = "ok" | "fail" | "skip";
 type Step = { state: State; title: string; detail?: React.ReactNode };
 type Result = { steps: Step[]; verdict: "green" | "red" | "neutral" };
 
+/** The contract this build verifies against. When set, the server can't point verification elsewhere. */
+const PINNED_CONTRACT: string | undefined = import.meta.env.VITE_CLAVIS_CONTRACT_ID;
+
 /**
  * Browser-side verification (AGENT.md 11.3). Everything here runs in the visitor's browser:
  * the hash chain is recomputed with Web Crypto and the on-chain commitment is read straight from a
- * NEAR RPC node, so the result does not depend on trusting the Clavis server.
+ * NEAR RPC node. With VITE_CLAVIS_CONTRACT_ID set at build time, the contract is not the server's
+ * choice either, so the result does not depend on trusting the Clavis server.
  */
 async function verify(log: TraderLog, entries: LogEntry[], network: Network): Promise<Result> {
   const steps: Step[] = [];
@@ -49,23 +53,26 @@ async function verify(log: TraderLog, entries: LogEntry[], network: Network): Pr
     });
   }
 
-  // 3. compare with the commitment stored in the NEAR contract
-  if (!log.contractId) {
+  // 3. compare with the commitment stored in the NEAR contract (pinned in the build when set, AUDIT H3)
+  const { contractId, mismatch } = verificationContract(PINNED_CONTRACT, log.contractId);
+  if (mismatch) {
+    steps.push({ state: "fail", title: "The server points verification at a different contract.", detail: mismatch });
+  } else if (!contractId) {
     steps.push({ state: "skip", title: "On-chain check skipped (no contract configured)." });
   } else {
     try {
-      const c = await getCommitment(network, log.contractId, log.traderId);
+      const c = await getCommitment(network, contractId, log.traderId);
       if (!c) {
         steps.push({
           state: "skip",
           title: "On-chain check skipped: this trader has no record in the contract yet.",
-          detail: <>Its log has not been committed to {log.contractId}.</>,
+          detail: <>Its log has not been committed to {contractId}.</>,
         });
       } else {
         const count = Number(c.trade_count);
         const contractLink = (
-          <a className="inline-flex items-center gap-1 text-brass hover:underline" href={explorerAccountUrl(network, log.contractId)} target="_blank" rel="noreferrer">
-            {log.contractId} <ExternalLink size={11} aria-hidden />
+          <a className="inline-flex items-center gap-1 text-brass hover:underline" href={explorerAccountUrl(network, contractId)} target="_blank" rel="noreferrer">
+            {contractId} <ExternalLink size={11} aria-hidden />
           </a>
         );
         if (count > n) {
