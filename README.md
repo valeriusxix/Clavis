@@ -135,7 +135,6 @@ Fees are included automatically because we use what was actually received. Full 
 - Real mainnet confidential trades with signature verification
 - Wallet login with NEP-413 signed messages (NEAR Connect)
 - Demo mode: seeded traders and a demo account so anyone can test it
-- `TODO: add any stretch features shipped (one-tap copy with trader fees, NFT keys, private AI strategy card)`
 
 ## Networks and addresses
 
@@ -183,7 +182,7 @@ Copy `.env.example` to `.env`. Everything is optional in demo mode.
 
 ## Built with
 
-NEAR Intents 1Click Swap API (`@defuse-protocol/one-click-sdk-typescript` for types and quote-signature verification) · Confidential Intents · NEAR smart contracts (Rust, `near-sdk` 5.29, `cargo-near`) · NEAR Connect (`@hot-labs/near-connect`) · `near-api-js` (NEP-413 verification) · React 19, Vite, Tailwind CSS 4, Recharts, React Router, Lucide icons · Node, Fastify, zod, SQLite (`better-sqlite3`) · vitest · `TODO: final library list`.
+NEAR Intents 1Click Swap API (`@defuse-protocol/one-click-sdk-typescript` for types and quote-signature verification) · Confidential Intents · NEAR smart contracts (Rust, `near-sdk` 5.29, `cargo-near`) · NEAR Connect (`@hot-labs/near-connect`) · `near-api-js` (NEP-413 verification) · React 19, Vite, Tailwind CSS 4, Recharts, React Router, Lucide icons · Node, Fastify (`@fastify/cookie`, `@fastify/cors`), zod, SQLite (`better-sqlite3`) · TypeScript, `tsx`, vitest · contract tests: `near-sandbox`, `near-api`, `cargo-near-build`, `tokio`, `testresult`.
 
 AI coding assistants were used during development.
 
