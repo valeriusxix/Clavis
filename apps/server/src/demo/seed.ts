@@ -9,8 +9,9 @@
 //   - numbers are stored as fixed-precision strings (toFixed), which is fully specified.
 //
 // Each trader follows a personality strategy against a seeded random-walk price path. A single small
-// "execution edge" per trader (price improvement vs. the path, like limit orders) is then
-// binary-searched so the trader's total PnL lands on the outcome AGENT.md asks for.
+// "execution edge" per trader (fill prices slightly better or worse than the hourly path, like limit
+// orders inside the hour) is then binary-searched so total PnL lands on the outcome AGENT.md asks for.
+// Every fill still loses the 0.2% swap fee in USD terms, like a real swap.
 import { computePnl, type PnlTrade } from "../pnl/engine";
 
 export const SEED = 2026;
@@ -132,14 +133,26 @@ const QTY_DP = 8; // max human-unit precision stored for quantities
 const dp = (k: AssetKey) => Math.min(QTY_DP, SEED_ASSETS[k].decimals);
 const USD_DP = 6;
 
-/** Execute intents against a wallet. Edge = price improvement vs. the path (can be negative). */
+/**
+ * Fill price vs. the hourly path: sells fill slightly above it and buys slightly below by `edge`
+ * (positive = skilful limit-style fills inside the hour, negative = sloppy fills). Stablecoins are 1.
+ */
+function execPrice(paths: PricePaths, key: AssetKey, h: number, side: "sell" | "buy", edge: number): number {
+  if (STABLE_KEYS.has(key)) return 1;
+  return paths[key][h]! * (side === "sell" ? 1 + edge : 1 - edge);
+}
+
+/**
+ * Execute intents against a wallet. Every fill loses the swap fee in USD terms (vOut = vIn * (1 - fee)),
+ * like a real 1Click swap; skill shows up only as better or worse fill prices.
+ */
 function fill(intents: Intent[], paths: PricePaths, startUsdc: number, edge: number): SimFill[] {
   const wallet = new Map<AssetKey, number>([["USDC", startUsdc]]);
   const fills: SimFill[] = [];
   for (const it of [...intents].sort((a, b) => a.h - b.h)) {
     const t = hourTime(it.h);
-    const pSell = paths[it.sell][it.h]!;
-    const pBuy = paths[it.buy][it.h]!;
+    const pSell = execPrice(paths, it.sell, it.h, "sell", edge);
+    const pBuy = execPrice(paths, it.buy, it.h, "buy", edge);
     const have = wallet.get(it.sell) ?? 0;
     let qIn = "usd" in it.size ? it.size.usd / pSell : have * it.size.fraction;
     if (qIn > have) qIn = have;
@@ -148,7 +161,7 @@ function fill(intents: Intent[], paths: PricePaths, startUsdc: number, edge: num
     if (!(qIn > 0)) continue;
     const vIn = Number((qIn * pSell).toFixed(USD_DP));
     if (vIn < 1) continue; // dust
-    const vOut = Number((vIn * (1 - FEE + edge)).toFixed(USD_DP));
+    const vOut = Number((vIn * (1 - FEE)).toFixed(USD_DP));
     const qOut = Number((vOut / pBuy).toFixed(dp(it.buy)));
     wallet.set(it.sell, Number((have - qIn).toFixed(dp(it.sell))));
     wallet.set(it.buy, Number(((wallet.get(it.buy) ?? 0) + qOut).toFixed(dp(it.buy))));
@@ -180,17 +193,21 @@ const clampH = (h: number) => (h < 0 ? 0 : h > HOURS ? HOURS : h);
 /** quiet-whale: few large swing trades in BTC/ETH/SOL; buys near lows, sells near highs. */
 function quietWhale(paths: PricePaths, rng: () => number): Intent[] {
   const intents: Intent[] = [];
-  const assets: AssetKey[] = ["BTC", "ETH", "SOL", "BTC", "ETH"];
+  const assets: AssetKey[] = ["SOL", "ETH", "BTC", "SOL", "ETH"];
   const swings = 14;
   const seg = Math.floor(HOURS / swings);
   for (let i = 0; i < swings; i++) {
     const a = assets[i % assets.length]!;
     const start = i * seg;
     const mid = start + Math.floor(seg / 2);
-    const buyH = clampH(argMin(paths[a], start, mid) + Math.floor(rng() * 6));
-    const sellH = clampH(argMax(paths[a], mid, start + seg - 2) - Math.floor(rng() * 6));
+    // Most swings buy near the low and sell near the high; about one in ten is mistimed (buys high, sells low).
+    const miss = rng() < 0.1;
+    const end = start + seg - 2;
+    // good swing: buy near the segment low, sell near the best price after it; miss: the reverse
+    const buyH = clampH((miss ? argMax(paths[a], start, mid) : argMin(paths[a], start, end - 12)) + Math.floor(rng() * 4));
+    const sellH = clampH((miss ? argMin(paths[a], mid, end) : argMax(paths[a], Math.min(buyH + 6, end), end)) - Math.floor(rng() * 4));
     if (sellH <= buyH) continue;
-    intents.push({ h: buyH, sell: "USDC", buy: a, size: { fraction: 0.8 + rng() * 0.15 } });
+    intents.push({ h: buyH, sell: "USDC", buy: a, size: { fraction: 0.92 + rng() * 0.08 } });
     intents.push({ h: sellH, sell: a, buy: "USDC", size: { fraction: 1 } });
   }
   return intents;

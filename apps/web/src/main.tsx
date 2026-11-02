@@ -1,34 +1,37 @@
-import { StrictMode, useEffect, useState } from "react";
+import { lazy, StrictMode, Suspense, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
+import { createBrowserRouter, RouterProvider } from "react-router";
+import { Layout } from "./components/Layout";
+import "./index.css";
+import { SessionProvider } from "./lib/session";
+import { HowItWorks } from "./pages/HowItWorks";
+import { Keys } from "./pages/Keys";
+import { Leaderboard } from "./pages/Leaderboard";
+import { Spinner } from "./components/ui";
 
-// Phase 0 placeholder. Pages (Leaderboard, Trader, Trade, Keys, HowItWorks), Tailwind,
-// Recharts and the wallet integration arrive in Phase 3.
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8787";
+// Chart-heavy pages load on demand so the leaderboard paints fast.
+const Trader = lazy(() => import("./pages/Trader").then((m) => ({ default: m.Trader })));
+const Trade = lazy(() => import("./pages/Trade").then((m) => ({ default: m.Trade })));
+const lazyPage = (node: ReactNode) => <Suspense fallback={<Spinner />}>{node}</Suspense>;
 
-type Meta = { demoMode: boolean; network: string; contractId: string | null; hasOneClickKey: boolean };
-
-function App() {
-  const [meta, setMeta] = useState<Meta | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch(`${API_URL}/api/meta`)
-      .then((r) => r.json() as Promise<Meta>)
-      .then(setMeta)
-      .catch((e: Error) => setError(e.message));
-  }, []);
-
-  return (
-    <main style={{ fontFamily: "system-ui, sans-serif", padding: 24 }}>
-      <h1>Clavis</h1>
-      <p>Trade in private. Prove your PnL in public. Sell the key to your trades.</p>
-      <pre>{error ? `API error: ${error}` : JSON.stringify(meta, null, 2)}</pre>
-    </main>
-  );
-}
+const router = createBrowserRouter([
+  {
+    element: <Layout />,
+    children: [
+      { path: "/", element: <Leaderboard /> },
+      { path: "/trader/:id", element: lazyPage(<Trader />) },
+      { path: "/trade", element: lazyPage(<Trade />) },
+      { path: "/keys", element: <Keys /> },
+      { path: "/how-it-works", element: <HowItWorks /> },
+      { path: "*", element: <p className="text-muted">Page not found.</p> },
+    ],
+  },
+]);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <SessionProvider>
+      <RouterProvider router={router} />
+    </SessionProvider>
   </StrictMode>,
 );

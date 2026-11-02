@@ -29,6 +29,10 @@ describe("demo seed (AGENT.md 10.1)", () => {
     }
   });
 
+  it("every fill loses the swap fee in USD terms, like a real swap", () => {
+    for (const t of seeded) for (const f of t.fills) expect(Number(f.vOut)).toBeLessThan(Number(f.vIn));
+  });
+
   it("hits the target outcomes with a small execution edge", () => {
     for (const t of seeded) {
       const spec = SEED_TRADERS.find((s) => s.handle === t.handle)!;
