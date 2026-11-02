@@ -39,8 +39,8 @@ export function HowItWorks() {
         </Step>
         <Step icon={<Link2 size={18} />} title="Commit">
           Each trader's log is a hash chain: h0 = sha256("clavis:v1:" + trader), then each entry's hash includes the previous one. The latest
-          hash is written to the Clavis contract on NEAR{meta?.contractId ? ` (${meta.contractId})` : ""}, so history cannot be rewritten after
-          keys are sold.
+          hash is written to the Clavis contract on NEAR{meta?.contractId ? ` (${meta.contractId})` : ""}, and every earlier hash stays in the
+          contract's events, so history can't be rewritten after keys are sold without it showing.
         </Step>
         <Step icon={<KeyRound size={18} />} title="Sell access">
           Followers buy a key with buy_key on the contract. The server only serves a trader's feed to accounts the contract says have
@@ -76,9 +76,9 @@ export function HowItWorks() {
             trade details.
           </li>
           <li>
-            Clavis cannot make up quote prices (1Click signatures) or rewrite history once it is committed (on-chain heads). A signature
-            proves the quote, not that the swap was executed: execution status comes from the Clavis server. Only trades placed through
-            Clavis count.
+            Clavis cannot make up quote prices (1Click signatures) or silently rewrite committed history: the server only commits logs that
+            extend the on-chain head, and earlier heads stay in the contract's events (Verify checks the latest one). A signature proves the
+            quote, not that the swap was executed: execution status comes from the Clavis server. Only trades placed through Clavis count.
           </li>
           <li>
             A 1Click signature proves the assets, amounts and recipient of a quote. It does not cover the confidentiality setting, so

@@ -91,7 +91,7 @@ describe("Committer", () => {
     const repo = await withSettledTrades(2);
     const calls: unknown[][] = [];
     let t = NOW;
-    let onChain = { trade_count: "0", head_hash: "x", last_commit_at: "0" };
+    let onChain = { trade_count: "0", head_hash: await computeHead(TRADER, []), last_commit_at: "0" };
     const committer = new Committer({
       repo,
       contractId: "clavis-app.testnet",
@@ -109,7 +109,7 @@ describe("Committer", () => {
     // a third trade settles 5 s later: no new commit until 30 s have passed
     repo.insertTrade({ ...pending("t3", "d3"), status: "SUCCESS", seq: 3, settled_at: new Date(NOW + 3).toISOString() });
     await refreshChainHead(repo, TRADER);
-    onChain = { trade_count: "2", head_hash: "y", last_commit_at: "1" };
+    onChain = { trade_count: "2", head_hash: await computeHead(TRADER, logOf(repo, TRADER).slice(0, 2)), last_commit_at: "1" };
     t = NOW + 5_000;
     await committer.tick();
     expect(calls).toHaveLength(1);
@@ -117,6 +117,26 @@ describe("Committer", () => {
     await committer.tick();
     expect(calls).toHaveLength(2);
     expect(repo.getChainHead(TRADER)!.committed_count).toBe(3);
+  });
+
+  it("refuses to commit a log that does not extend the head already on-chain (AUDIT M2)", async () => {
+    const repo = await withSettledTrades(2);
+    const committedHead = repo.getChainHead(TRADER)!.head_hash; // 2 trades committed earlier
+    repo.updateTrade("t1", { amount_out_usd: "999" }); // history rewritten in the database...
+    repo.insertTrade({ ...pending("t3", "d3"), status: "SUCCESS", seq: 3, settled_at: new Date(NOW + 3).toISOString() });
+    await refreshChainHead(repo, TRADER); // ...then a new trade arrives
+    const calls: unknown[] = [];
+    const logs: string[] = [];
+    await new Committer({
+      repo,
+      contractId: "c",
+      now: () => NOW,
+      view: async <T,>() => ({ trade_count: "2", head_hash: committedHead, last_commit_at: "1" }) as T,
+      commit: async (...args) => (calls.push(args), "TX"),
+      log: (msg) => logs.push(msg),
+    }).tick();
+    expect(calls).toEqual([]);
+    expect(logs.some((m) => /does not extend/.test(m))).toBe(true);
   });
 
   it("skips traders that are not registered on-chain, and recognises heads that are already committed", async () => {

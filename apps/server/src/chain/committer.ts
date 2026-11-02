@@ -3,6 +3,8 @@
 // trader per 30 s. Traders that are not registered on-chain are skipped (the contract would reject them).
 import { Account, JsonRpcProvider, type KeyPairString } from "near-api-js";
 import type { Repo } from "../db/db";
+import { serverChain } from "./hashchain";
+import { logOf } from "./log";
 import type { ViewFn } from "./nearView";
 
 /** Sends commit_log and returns the transaction hash. */
@@ -58,6 +60,12 @@ export class Committer {
       }
       if (count >= h.trade_count) {
         log?.("on-chain commitment is ahead of or differs from the local log; not committing", { traderId: h.trader_id, count });
+        continue;
+      }
+      // The new head must extend the committed one: the first `count` entries must hash to it (AUDIT M2).
+      const chain = await serverChain(h.trader_id, logOf(repo, h.trader_id));
+      if (chain[count] !== onChain.head_hash) {
+        log?.("local log does not extend the head already on-chain; not committing", { traderId: h.trader_id, count });
         continue;
       }
 
