@@ -145,7 +145,7 @@ Fees are included automatically because we use what was actually received. Full 
 | Trade execution | NEAR Intents **mainnet**. Intents has no testnet, so real trades used ≤ $2 each from a dev account. |
 | Real trader account | `TODO` |
 
-Simulated traders are labeled **SIMULATED** everywhere they appear. They are testnet subaccounts of the contract (for example `quiet-whale.clavis-app.testnet`) with a deterministic, seeded 45-day history.
+Simulated traders are labeled **SIMULATED** everywhere they appear. Each has a deterministic, seeded 45-day history and a testnet account id under the contract (for example `quiet-whale.clavis-app.testnet`). Their log hashes are on-chain only once those accounts are registered with the contract; "Trades committed" on each card shows how many trades the on-chain hash covers.
 
 ## Project structure
 
