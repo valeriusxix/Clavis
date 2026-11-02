@@ -34,7 +34,7 @@ export function HowItWorks() {
           where it went, as long as the output is not sent back to the same public account.
         </Step>
         <Step icon={<Fingerprint size={18} />} title="Record and prove">
-          Clavis stores each trade with 1Click's signed quote, so trades cannot be invented. PnL is computed from what was actually
+          Clavis stores each trade with 1Click's signed quote, so its prices and amounts cannot be made up. PnL is computed from what was actually
           received, so fees are included.
         </Step>
         <Step icon={<Link2 size={18} />} title="Commit">
@@ -75,7 +75,11 @@ export function HowItWorks() {
             The Clavis server sees every trade placed through it, because it relays the quotes. Traders trust the Clavis operator with their
             trade details.
           </li>
-          <li>Clavis cannot invent trades (1Click signatures) or rewrite history (on-chain heads). Only trades placed through Clavis count.</li>
+          <li>
+            Clavis cannot make up quote prices (1Click signatures) or rewrite history once it is committed (on-chain heads). A signature
+            proves the quote, not that the swap was executed: execution status comes from the Clavis server. Only trades placed through
+            Clavis count.
+          </li>
           <li>
             A 1Click signature proves the assets, amounts and recipient of a quote. It does not cover the confidentiality setting, so
             "1Click-signed" does not by itself prove a swap was confidential.

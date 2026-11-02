@@ -93,7 +93,7 @@ Follower ──▶ buy_key() on the contract ──▶ feed unlocks ──▶ "V
 ```
 
 1. **Trade privately.** The trader requests a quote with `confidentiality: "basic"`, sends the deposit, and NEAR Intents executes the swap on a private shard.
-2. **Record and prove.** Clavis stores each trade with 1Click's **signed quote**, so trades can't be invented.
+2. **Record and prove.** Clavis stores each trade with 1Click's **signed quote**, so its prices and amounts can't be made up.
 3. **Commit.** Each trader's trade log forms a **hash chain** (`h0 = sha256("clavis:v1:" + trader)`, each next hash covers the previous one and the entry). The latest hash is written to the Clavis contract, so history can't be rewritten after keys are sold.
 4. **Sell access.** Followers buy a key on-chain. The server only serves a trader's feed to accounts where the contract says `has_access = true`.
 5. **Verify.** Key holders recompute the hash chain in their own browser and check it against the contract. The browser reads the contract directly from a NEAR RPC node, not through the Clavis server, and the contract id is fixed in the web build (`VITE_CLAVIS_CONTRACT_ID`), so the server can't point the check at another contract.
@@ -122,7 +122,8 @@ Fees are included automatically because we use what was actually received. Full 
 
 - Clavis's server **sees the trades placed through it**, because it relays the quotes. Traders trust the Clavis operator with their trade details.
 - The public chain sees that a trader deposited some amount of token A into 1Click. It does not see what that was swapped into or where it went, **as long as the output is not sent back to the same public account**. If the output lands in the account that paid, anyone looking at that account sees both sides of the trade.
-- Clavis **cannot invent trades** (each real trade carries 1Click's signature) and **cannot rewrite history** (hash heads are on-chain).
+- Clavis **cannot make up quote prices**: each real trade carries 1Click's signed quote. The signature proves 1Click quoted those assets and amounts; it does not prove the swap was executed. Execution status comes from the Clavis server, which polls 1Click, and the "signature valid" check in the Verify panel is run by the server.
+- Clavis **cannot rewrite history** once it is committed (hash heads are on-chain).
 - A 1Click signature covers the quote's assets, amounts, recipient and timestamp. It does **not** cover the confidentiality setting, so "1Click-signed ✓" alone does not prove a swap was confidential.
 - Only trades placed **through Clavis** count, so traders can't cherry-pick wins made elsewhere.
 - **Roadmap:** run the relay inside a TEE with remote attestation, then switch to **native Confidential Intents view keys** when NEAR ships them. That removes Clavis's operator from the trust path. The code already isolates this behind a `DisclosureAdapter` interface.
