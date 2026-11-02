@@ -176,6 +176,10 @@ export class Repo {
     const row = this.db.prepare(`SELECT MAX(seq) AS m FROM trades WHERE trader_id = ?`).get(traderId) as { m: number | null };
     return (row.m ?? 0) + 1;
   }
+  /** Delete quotes that were never filled or sent, created before `iso` (AUDIT L8). Returns how many. */
+  deleteUnfilledQuotesBefore(iso: string): number {
+    return this.db.prepare(`DELETE FROM trades WHERE status = 'QUOTED' AND created_at < ?`).run(iso).changes;
+  }
   deleteTradesOf(traderId: string): void {
     this.db.prepare(`DELETE FROM trades WHERE trader_id = ?`).run(traderId);
   }

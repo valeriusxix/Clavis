@@ -318,3 +318,33 @@ describe("DEMO_MODE=false ignores demo keys (AUDIT L2)", () => {
     await prod.close();
   });
 });
+
+describe("hosted-demo hygiene (AUDIT L8)", () => {
+  it("rate-limits quotes per client and deletes unfilled quotes after 24 hours", async () => {
+    const repo = new Repo(openDb(":memory:"));
+    await seedDatabase(repo, NOW, "/nonexistent/real-trades.json");
+    const app = await buildApp({
+      config: parseConfig({ DEMO_MODE: "true" }),
+      repo,
+      oneclick: fakeOneClick(true),
+      tokens: new TokenCache({ getTokens: () => Promise.reject(new Error("offline")) }, repo, () => NOW),
+      now: () => NOW,
+      sessionSecret: "test-secret-test-secret-test-secret",
+      webOrigins: [],
+      cookie: { secure: false, sameSite: "lax" },
+    });
+    const cookie = cookieOf(await app.inject({ method: "POST", url: "/api/demo/login" }));
+    const payload = { originAsset: SEED_ASSETS.NEAR.assetId, destinationAsset: SEED_ASSETS.USDC.assetId, amountHuman: "1" };
+    const codes: number[] = [];
+    for (let i = 0; i < 31; i++) codes.push((await app.inject({ method: "POST", url: "/api/trades/quote", headers: { cookie }, payload })).statusCode);
+    expect(codes.slice(0, 30).every((c) => c === 200)).toBe(true);
+    expect(codes[30]).toBe(429);
+
+    const quoted = () => (repo.db.prepare(`SELECT COUNT(*) AS n FROM trades WHERE status = 'QUOTED'`).get() as { n: number }).n;
+    expect(quoted()).toBe(30);
+    expect(repo.deleteUnfilledQuotesBefore(new Date(NOW - 86_400_000).toISOString())).toBe(0);
+    expect(repo.deleteUnfilledQuotesBefore(new Date(NOW + 1).toISOString())).toBe(30);
+    expect(quoted()).toBe(0);
+    await app.close();
+  });
+});

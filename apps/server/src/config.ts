@@ -31,6 +31,8 @@ const EnvSchema = z.object({
   NEAR_RPC_URL: optionalString,
 
   PORT: z.preprocess(emptyToUndefined, z.coerce.number().int().positive().default(8787)),
+  /** Listen address. 0.0.0.0 (all interfaces) suits hosting; 127.0.0.1 keeps a local API off the network. */
+  HOST: z.preprocess(emptyToUndefined, z.string().default("0.0.0.0")),
   SESSION_SECRET: optionalString,
   DATABASE_PATH: z.preprocess(emptyToUndefined, z.string().default("./data/clavis.db")),
   /** Comma-separated browser origins allowed to call the API with cookies (CORS). */

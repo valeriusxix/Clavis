@@ -32,6 +32,11 @@ const DepositBody = z.object({ txHash: z.string().min(1), nearSenderAccount: z.s
 export function registerTradeRoutes(app: FastifyInstance, ctx: Ctx) {
   /** Simulate fill: at most 10 per minute per account (AUDIT M3). */
   const simulateLimit = new RateLimiter(10, 60_000, ctx.now);
+  /**
+   * Quotes call 1Click with the operator's key: at most 30 per minute per account (AUDIT L8). Per
+   * account, not per IP: behind a hosting proxy every visitor would share the proxy's IP.
+   */
+  const quoteLimit = new RateLimiter(30, 60_000, ctx.now);
   const ownTrade = (tradeId: string, sub: string): TradeRow => {
     const t = ctx.repo.getTrade(tradeId);
     if (!t) throw new ApiError(404, "TRADE_NOT_FOUND", `No trade ${tradeId}`);
@@ -42,6 +47,7 @@ export function registerTradeRoutes(app: FastifyInstance, ctx: Ctx) {
   // Request a 1Click quote with confidentiality "basic". Dry run is the default.
   app.post("/api/trades/quote", async (req) => {
     const session = ctx.requireSession(req);
+    if (!quoteLimit.hit(session.sub)) throw new ApiError(429, "RATE_LIMITED", "Too many quotes. Wait a minute and try again.");
     const body = QuoteBody.parse(req.body ?? {});
     if (!body.dry && (session.kind !== "wallet" || !session.payer)) {
       throw new ApiError(403, "REAL_MODE_NEEDS_MAINNET_WALLET", "Real trades need the linked mainnet wallet. Dry run works with the demo account.");

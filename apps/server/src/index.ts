@@ -69,10 +69,13 @@ if (config.DEMO_MODE) {
 }
 tokens.start(60_000); // also the price refresher (prices table)
 
-// Demo visitors' accounts, keys and simulated trades are deleted after 24 hours (AUDIT M3).
+// Demo visitors' accounts, keys and simulated trades are deleted after 24 hours (AUDIT M3), and so
+// are quotes that were never filled or sent (AUDIT L8).
 const purgeDemo = () => {
   const n = purgeExpiredDemoData(repo, Date.now());
   if (n > 0) log("deleted expired demo accounts", { n });
+  const q = repo.deleteUnfilledQuotesBefore(new Date(Date.now() - 86_400_000).toISOString());
+  if (q > 0) log("deleted unfilled quotes older than 24 h", { n: q });
 };
 purgeDemo();
 setInterval(purgeDemo, 3_600_000).unref();
@@ -94,4 +97,4 @@ const app = await buildApp({
   registrations: loadSeedRegistrations(),
 });
 
-await app.listen({ port: config.PORT, host: "0.0.0.0" });
+await app.listen({ port: config.PORT, host: config.HOST });
