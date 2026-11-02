@@ -33,7 +33,7 @@ const EnvSchema = z.object({
   SESSION_SECRET: optionalString,
   DATABASE_PATH: z.preprocess(emptyToUndefined, z.string().default("./data/clavis.db")),
   /** Comma-separated browser origins allowed to call the API with cookies (CORS). */
-  WEB_ORIGIN: z.preprocess(emptyToUndefined, z.string().default("http://localhost:5173")),
+  WEB_ORIGIN: z.preprocess(emptyToUndefined, z.string().default("http://localhost:5173,http://127.0.0.1:5173")),
   NODE_ENV: z.preprocess(emptyToUndefined, z.string().default("development")),
 });
 

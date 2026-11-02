@@ -8,6 +8,7 @@ import type { Repo } from "./db/db";
 import { simTraderId, SEED_TRADERS } from "./demo/seed";
 import type { OneClickClient } from "./oneclick/client";
 import type { TokenCache } from "./oneclick/tokens";
+import type { Verifier } from "./auth/nep413";
 import { getSession, type CookieOptions, type Session } from "./auth/session";
 import { registerAuthRoutes } from "./routes/auth";
 import { registerKeyRoutes } from "./routes/keys";
@@ -26,6 +27,8 @@ export type AppDeps = {
   sessionSecret: string;
   /** Contract view calls (has_access). Undefined when no contract is configured. */
   view?: ViewFn;
+  /** NEP-413 verifier (signature + FullAccess key check via RPC). */
+  verifyNep413?: Verifier;
   /** Allowed browser origins for CORS (credentials). */
   webOrigins: string[];
   cookie: CookieOptions;

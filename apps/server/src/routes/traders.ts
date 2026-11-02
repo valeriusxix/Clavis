@@ -4,6 +4,8 @@ import type { TradeRow } from "../db/db";
 import { logOf } from "../chain/log";
 import { DEMO_VIEWER } from "../demo/seedDb";
 import { buildPricing, traderStats } from "../pnl/stats";
+import type { QuoteResponse } from "../oneclick/types";
+import { checkQuoteSignature } from "../oneclick/verifySignature";
 
 /** A feed row: everything a key holder sees about one trade. */
 export function feedRow(t: TradeRow) {
@@ -88,5 +90,22 @@ export function registerTraderRoutes(app: FastifyInstance, ctx: Ctx) {
       contractId: ctx.config.CLAVIS_CONTRACT_ID ?? null,
       network: ctx.config.NETWORK,
     };
+  });
+
+  // "Re-verify": run the 1Click signature verifier again over every real trade in the log.
+  app.post<{ Params: { id: string } }>("/api/traders/:id/reverify", async (req) => {
+    const trader = getTraderOr404(req.params.id);
+    if (!(await ctx.canSeeFeed(ctx.session(req), trader.account_id))) throw locked();
+    const results: Record<string, boolean | null> = {};
+    for (const t of ctx.repo.settledTrades(trader.account_id)) {
+      if (t.is_simulated) {
+        results[String(t.seq)] = null;
+        continue;
+      }
+      const valid = checkQuoteSignature(JSON.parse(t.quote_json) as QuoteResponse).valid;
+      results[String(t.seq)] = valid;
+      ctx.repo.updateTrade(t.id, { signature_valid: valid ? 1 : 0 });
+    }
+    return { traderId: trader.account_id, results };
   });
 }
