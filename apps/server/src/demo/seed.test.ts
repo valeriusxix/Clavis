@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { openDb, Repo } from "../db/db";
 import { buildPricePaths, generateSeed, SEED_ASSETS, SEED_END, SEED_START, SEED_TRADERS } from "./seed";
-import { DEMO_VIEWER, seedDatabase } from "./seedDb";
+import { seedDatabase } from "./seedDb";
 
 const NO_REAL = "/nonexistent/real-trades.json";
 
@@ -50,7 +50,7 @@ describe("seedDatabase", () => {
     const full = await seedDatabase(new Repo(openDb(":memory:")), SEED_END + 1, NO_REAL);
     expect(summary.trades).toBeGreaterThan(0);
     expect(summary.trades).toBeLessThan(full.trades);
-    for (const tr of repo.listTraders().filter((t) => t.account_id !== DEMO_VIEWER)) {
+    for (const tr of repo.listTraders()) {
       const seqs = repo.settledTrades(tr.account_id).map((t) => t.seq);
       expect(seqs).toEqual(seqs.map((_, i) => i + 1));
       expect(repo.settledTrades(tr.account_id).every((t) => Date.parse(t.settled_at!) <= mid)).toBe(true);
@@ -66,13 +66,12 @@ describe("seedDatabase", () => {
     expect(await heads()).toEqual(await heads());
   });
 
-  it("labels everything SIMULATED and creates the demo viewer profile", async () => {
+  it("labels everything SIMULATED (demo visitors get their own profile later, AUDIT M3)", async () => {
     const repo = new Repo(openDb(":memory:"));
     await seedDatabase(repo, SEED_END + 1, NO_REAL);
     const traders = repo.listTraders();
-    expect(traders).toHaveLength(6);
+    expect(traders).toHaveLength(5);
     expect(traders.every((t) => t.is_simulated === 1)).toBe(true);
-    expect(traders.map((t) => t.account_id)).toContain(DEMO_VIEWER);
     expect(traders.find((t) => t.display_name === "quiet-whale")!.account_id).toBe("quiet-whale.clavis-app.testnet");
   });
 });

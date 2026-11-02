@@ -7,6 +7,7 @@ import { DEFAULT_RPC, makeViewFn } from "./chain/nearView";
 import { StatusPoller } from "./jobs/statusPoller";
 import { loadDotEnv, parseConfig, REPO_ROOT, seedAccountsOf } from "./config";
 import { openDb, Repo } from "./db/db";
+import { purgeExpiredDemoData } from "./demo/demoAccounts";
 import { loadSeedRegistrations, seedDatabase } from "./demo/seedDb";
 import { OneClickClient } from "./oneclick/client";
 import { TokenCache } from "./oneclick/tokens";
@@ -67,6 +68,14 @@ if (config.DEMO_MODE) {
   console.log(`[clavis] demo seed: ${summary.traders} SIMULATED traders, ${summary.trades} trades, ${summary.realTrades} real trades`);
 }
 tokens.start(60_000); // also the price refresher (prices table)
+
+// Demo visitors' accounts, keys and simulated trades are deleted after 24 hours (AUDIT M3).
+const purgeDemo = () => {
+  const n = purgeExpiredDemoData(repo, Date.now());
+  if (n > 0) log("deleted expired demo accounts", { n });
+};
+purgeDemo();
+setInterval(purgeDemo, 3_600_000).unref();
 
 const app = await buildApp({
   config,

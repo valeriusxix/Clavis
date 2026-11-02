@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { ApiError, type Ctx } from "../app";
+import { demoExpiresAt, isDemoId } from "../demo/demoAccounts";
 
 const DEMO_KEY_DAYS = 30;
 
@@ -14,7 +15,9 @@ export function registerKeyRoutes(app: FastifyInstance, ctx: Ctx) {
     if (!ctx.repo.getTrader(traderId)) throw new ApiError(404, "TRADER_NOT_FOUND", `No trader ${traderId}`);
     const current = ctx.repo.getDemoAccessExpiry(traderId, session.sub);
     const base = Math.max(ctx.now(), current ? Date.parse(current) : 0); // extends, like the contract
-    const expiresAt = new Date(base + DEMO_KEY_DAYS * 86_400_000).toISOString();
+    // A per-visitor demo account and its keys are deleted after 24 h (AUDIT M3), so its keys end then.
+    const end = isDemoId(session.sub) ? Math.min(base + DEMO_KEY_DAYS * 86_400_000, demoExpiresAt(session.sub)) : base + DEMO_KEY_DAYS * 86_400_000;
+    const expiresAt = new Date(end).toISOString();
     ctx.repo.grantDemoAccess(traderId, session.sub, expiresAt);
     return { traderId, holderId: session.sub, expiresAt, simulated: true };
   });

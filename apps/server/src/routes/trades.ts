@@ -4,6 +4,8 @@ import { z } from "zod";
 import { ApiError, type Ctx } from "../app";
 import { refreshChainHead } from "../chain/log";
 import type { TradeRow } from "../db/db";
+import { DEMO_SIM_CAP } from "../demo/demoAccounts";
+import { RateLimiter } from "../lib/rateLimit";
 import { toBaseUnits } from "../lib/units";
 import { OneClickError } from "../oneclick/client";
 import type { QuoteRequest, QuoteResponse } from "../oneclick/types";
@@ -28,6 +30,8 @@ const QuoteBody = z.object({
 const DepositBody = z.object({ txHash: z.string().min(1), nearSenderAccount: z.string().optional() });
 
 export function registerTradeRoutes(app: FastifyInstance, ctx: Ctx) {
+  /** Simulate fill: at most 10 per minute per account (AUDIT M3). */
+  const simulateLimit = new RateLimiter(10, 60_000, ctx.now);
   const ownTrade = (tradeId: string, sub: string): TradeRow => {
     const t = ctx.repo.getTrade(tradeId);
     if (!t) throw new ApiError(404, "TRADE_NOT_FOUND", `No trade ${tradeId}`);
@@ -114,7 +118,7 @@ export function registerTradeRoutes(app: FastifyInstance, ctx: Ctx) {
         created_at: new Date(ctx.now()).toISOString(),
         key_price_yocto: "0",
         period_days: 30,
-        style: null,
+        style: session.kind === "demo" ? "your demo profile" : null,
       });
     }
     const q = response.quote;
@@ -197,7 +201,11 @@ export function registerTradeRoutes(app: FastifyInstance, ctx: Ctx) {
   // Record a SIMULATED fill from one of your dry quotes. It enters your own log, labeled SIMULATED.
   app.post<{ Params: { id: string } }>("/api/trades/:id/simulate", async (req) => {
     const session = ctx.requireSession(req);
+    if (!simulateLimit.hit(session.sub)) throw new ApiError(429, "RATE_LIMITED", "Too many simulated fills. Wait a minute and try again.");
     const trade = ownTrade(req.params.id, session.sub);
+    if (session.kind === "demo" && ctx.repo.settledTrades(session.sub).length >= DEMO_SIM_CAP) {
+      throw new ApiError(429, "DEMO_LIMIT", `A demo account can record up to ${DEMO_SIM_CAP} simulated trades. Use "Reset demo" to start over.`);
+    }
     const quote = JSON.parse(trade.quote_json) as QuoteResponse;
     if (trade.status !== "QUOTED" || quote.quoteRequest?.dry !== true) {
       throw new ApiError(409, "NOT_SIMULATABLE", "Only an unfilled dry quote can be simulated.");

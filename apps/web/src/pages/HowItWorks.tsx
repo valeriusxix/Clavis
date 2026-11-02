@@ -90,8 +90,8 @@ export function HowItWorks() {
 
       {meta?.demoMode && (
         <p className="text-xs text-faint">
-          Demo mode: the seeded traders and their trades are SIMULATED. Key purchases with the demo account are simulated in the server
-          database.
+          Demo mode: the seeded traders and their trades are SIMULATED. Each visitor gets their own demo account; its key purchases are
+          simulated in the server database, and its keys and simulated trades are deleted after 24 hours.
         </p>
       )}
     </div>

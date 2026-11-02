@@ -172,7 +172,7 @@ describe("dry quote -> Simulate fill", () => {
     const again = await app.inject({ method: "POST", url: `/api/trades/${quote.tradeId}/simulate`, headers: { cookie } });
     expect(again.statusCode).toBe(409);
 
-    const own = await app.inject({ url: "/api/traders/demo-viewer/feed", headers: { cookie } });
+    const own = await app.inject({ url: `/api/traders/${login.json().account}/feed`, headers: { cookie } });
     expect(own.statusCode).toBe(200); // your own profile is always visible to you
     expect(own.json().trades).toHaveLength(1);
     await app.close();

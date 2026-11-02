@@ -18,7 +18,6 @@ import {
   type SimFill,
 } from "./seed";
 
-export const DEMO_VIEWER = "demo-viewer";
 export const REAL_TRADES_PATH = resolve(dirname(fileURLToPath(import.meta.url)), "real-trades.json");
 /** Written by `pnpm seed:chain`: the seeded traders' testnet accounts and registration transactions. */
 export const SEED_CHAIN_PATH = resolve(dirname(fileURLToPath(import.meta.url)), "seed-chain.json");
@@ -119,16 +118,7 @@ export async function seedDatabase(
         });
     }
 
-    // The demo viewer's own (SIMULATED) trader profile, where "Simulate fill" records trades.
-    repo.upsertTrader({
-      account_id: DEMO_VIEWER,
-      display_name: DEMO_VIEWER,
-      is_simulated: 1,
-      created_at: new Date(now).toISOString(),
-      key_price_yocto: "0",
-      period_days: 30,
-      style: "your demo profile",
-    });
+    // Each demo visitor's own SIMULATED profile is created on their first quote (AUDIT M3).
 
     // Seed price path, every 6 hours, for equity curves and marks of SIMULATED traders.
     const points: { asset_id: string; t: number; price: number }[] = [];

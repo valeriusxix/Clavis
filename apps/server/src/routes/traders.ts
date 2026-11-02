@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { ApiError, type Ctx } from "../app";
 import type { TradeRow } from "../db/db";
-import { DEMO_VIEWER } from "../demo/seedDb";
+import { isDemoId } from "../demo/demoAccounts";
 import { buildPricing, traderStats } from "../pnl/stats";
 import type { QuoteResponse } from "../oneclick/types";
 import { checkQuoteSignature } from "../oneclick/verifySignature";
@@ -46,7 +46,7 @@ export function registerTraderRoutes(app: FastifyInstance, ctx: Ctx) {
     const now = ctx.now();
     const traders = ctx.repo
       .listTraders()
-      .filter((t) => t.account_id !== DEMO_VIEWER)
+      .filter((t) => !isDemoId(t.account_id)) // demo visitors' simulated trades never reach the leaderboard
       .map((t) => traderStats(ctx.repo, t, pricing, now, ctx.seededIds).stats)
       .sort((a, b) => b.pnl30dPct - a.pnl30dPct);
     return { traders };

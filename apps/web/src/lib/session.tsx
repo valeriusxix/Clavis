@@ -9,8 +9,10 @@ type SessionCtx = {
   session: SessionInfo;
   network: Network;
   wallet: NearWalletBase | null;
-  /** Log in as demo-viewer (demo mode only). */
+  /** Log in with this visitor's own demo account (demo mode only). */
   loginDemo: () => Promise<void>;
+  /** Delete this visitor's demo keys and trades and start a fresh demo account. */
+  resetDemo: () => Promise<void>;
   /** Connect a wallet and log in with a signed NEP-413 message. */
   loginWallet: () => Promise<NearWalletBase>;
   /** Real mode: connect the linked MAINNET wallet (sends deposits) and log in as its real trader. */
@@ -50,6 +52,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setSession({ account: r.account, kind: "demo" });
   }, []);
 
+  const resetDemo = useCallback(async () => {
+    const r = await api.demoReset();
+    setSession({ account: r.account, kind: "demo" });
+  }, []);
+
   const loginWallet = useCallback(async () => {
     const { wallet: w } = await connectWallet(network);
     const challenge = await api.challenge();
@@ -80,8 +87,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [wallet, mainnetWallet, network]);
 
   const value = useMemo(
-    () => ({ meta, metaError, session, network, wallet, mainnetWallet, loginDemo, loginWallet, loginMainnet, logout, refresh }),
-    [meta, metaError, session, network, wallet, mainnetWallet, loginDemo, loginWallet, loginMainnet, logout, refresh],
+    () => ({ meta, metaError, session, network, wallet, mainnetWallet, loginDemo, resetDemo, loginWallet, loginMainnet, logout, refresh }),
+    [meta, metaError, session, network, wallet, mainnetWallet, loginDemo, resetDemo, loginWallet, loginMainnet, logout, refresh],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

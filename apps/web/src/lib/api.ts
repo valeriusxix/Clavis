@@ -143,6 +143,8 @@ export const api = {
   me: () => request<{ session: SessionInfo }>("/api/me"),
   myKeys: () => request<{ account: string; keys: MyKey[] }>("/api/me/keys"),
   demoLogin: () => request<{ account: string; kind: "demo"; banner: string }>("/api/demo/login", { method: "POST" }),
+  /** Delete this visitor's demo keys and trades and start a fresh demo account. */
+  demoReset: () => request<{ account: string; kind: "demo"; banner: string }>("/api/demo/reset", { method: "POST" }),
   demoBuyKey: (traderId: string) =>
     request<{ traderId: string; expiresAt: string; simulated: true }>("/api/demo/buy-key", { method: "POST", body: { traderId } }),
   logout: () => request<{ ok: true }>("/api/auth/logout", { method: "POST" }),

@@ -1,4 +1,5 @@
 import type { Repo, TradeRow, TraderRow } from "../db/db";
+import { isDemoId } from "../demo/demoAccounts";
 import { fromBaseUnits } from "../lib/units";
 import {
   computePnl,
@@ -66,7 +67,7 @@ export function buildPricing(repo: Repo): Pricing {
   const live = repo.prices();
   const latestAt = live.reduce((m, p) => Math.max(m, Date.parse(p.updated_at) || 0), 0);
   const livePriceAt = priceHistoryFromTrades(
-    settled.filter((t) => t.is_simulated === 0 || t.trader_id === "demo-viewer").map(toPnlTrade),
+    settled.filter((t) => t.is_simulated === 0 || isDemoId(t.trader_id)).map(toPnlTrade),
     live.length ? { prices: Object.fromEntries(live.map((p) => [p.asset_id, p.price])), at: latestAt } : undefined,
   );
   return { isStable, seedPriceAt, livePriceAt };

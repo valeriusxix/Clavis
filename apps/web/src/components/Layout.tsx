@@ -12,7 +12,7 @@ const NAV = [
 ];
 
 export function Layout() {
-  const { meta, metaError, session, loginWallet, logout } = useSession();
+  const { meta, metaError, session, loginWallet, logout, resetDemo } = useSession();
   const [connecting, setConnecting] = useState(false);
   const [walletError, setWalletError] = useState<string | null>(null);
 
@@ -40,8 +40,17 @@ export function Layout() {
             {session ? (
               <>
                 <span className="num hidden max-w-[14rem] truncate text-xs text-muted sm:inline" title={session.account}>
-                  {session.kind === "demo" ? "demo-viewer (demo)" : session.account}
+                  {session.kind === "demo" ? `${session.account} (demo)` : session.account}
                 </span>
+                {session.kind === "demo" && (
+                  <button
+                    className="text-xs text-muted underline-offset-2 hover:text-fg hover:underline"
+                    title="Delete your demo keys and simulated trades and start a fresh demo account"
+                    onClick={() => void resetDemo().then(() => window.location.reload())}
+                  >
+                    Reset demo
+                  </button>
+                )}
                 <Button size="sm" variant="ghost" onClick={() => void logout()} aria-label="Log out">
                   <LogOut size={14} aria-hidden />
                 </Button>

@@ -1,7 +1,7 @@
 import type {} from "@fastify/cookie"; // request.cookies / reply.setCookie type augmentation
 import type { FastifyReply, FastifyRequest } from "fastify";
 
-/** HTTP-only, signed session cookie. `demo` = demo-viewer (no wallet); `wallet` = NEP-413 login. */
+/** HTTP-only, signed session cookie. `demo` = a per-visitor demo account (no wallet); `wallet` = NEP-413 login. */
 export type Session = {
   sub: string;
   kind: "demo" | "wallet";
@@ -15,13 +15,19 @@ const MAX_AGE_S = 7 * 24 * 3600;
 
 export type CookieOptions = { secure: boolean; sameSite: "lax" | "none" };
 
-export function setSession(reply: FastifyReply, s: Omit<Session, "exp">, now: number, opts: CookieOptions): Session {
-  const session: Session = { ...s, exp: now + MAX_AGE_S * 1000 };
+export function setSession(
+  reply: FastifyReply,
+  s: Omit<Session, "exp">,
+  now: number,
+  opts: CookieOptions,
+  maxAgeS = MAX_AGE_S,
+): Session {
+  const session: Session = { ...s, exp: now + maxAgeS * 1000 };
   reply.setCookie(SESSION_COOKIE, Buffer.from(JSON.stringify(session)).toString("base64url"), {
     signed: true,
     httpOnly: true,
     path: "/",
-    maxAge: MAX_AGE_S,
+    maxAge: maxAgeS,
     secure: opts.secure,
     sameSite: opts.sameSite,
   });
