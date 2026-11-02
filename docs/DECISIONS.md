@@ -174,6 +174,48 @@ private balances. History is invite-only.
 - **`withdraw()` callback:** zero the caller's balance before the transfer promise. Then chain a
   private callback (`#[private]`) that **restores the balance if the transfer failed**, and emits
   `withdrawn` only on success.
+  - It **adds back** rather than overwriting, because new key sales may land before the callback.
+  - On failure it emits `withdraw_failed`.
+
+## Phase 1 contract implementation choices (2026-11-02)
+
+The toolchain follows the docs.near.org quickstart and NEAR's `near-smart-contracts` skill:
+- scaffolded with `cargo near new`;
+- near-sdk **5.29.1**, Rust 1.93.0 (pinned by the template's `rust-toolchain.toml`);
+- cargo-near **0.22.0**, near-cli-rs **0.30.1** (latest releases, installed with the official installers).
+
+The template's nested `.git` and `.github` deploy workflows were removed. AGENT.md 7.2 is
+implemented as written, plus:
+
+- **`new` is `#[private]`.** Only the contract account can initialize it, in the deploy transaction,
+  so nobody can front-run init.
+- **Hash head starts at genesis.** `register_trader` sets `head_hash = sha256("clavis:v1:" + trader_id)`
+  (h0 of AGENT.md 11.2). So `get_commitment` of a trader with no trades matches an empty log, and
+  `commit_log` never grows storage. `head_hash` is stored lowercase.
+- **64-bit numbers in JSON are strings (`U64`).** This covers the `trade_count` argument of
+  `commit_log`, the `get_access` expiry, `get_commitment`, and the timestamp and count fields of
+  `get_trader` / `list_traders`. Nanosecond timestamps do not fit in a JavaScript number.
+  `NearToken` values are yoctoNEAR strings. `period_days` (u32) and list paging are plain numbers.
+- **`update_trader` is payable.** A longer display name pays for its extra storage; any unused
+  deposit is refunded.
+- **`buy_key`** returns the new expiry, and rejects a trader buying their own key (they always have
+  access). The fee is `price * bps / 10000`, rounded down. Trader share + fee always equals the price
+  (tested).
+- **Validation:**
+  - `display_name` 1–64 characters;
+  - `period_days` 1–365;
+  - `platform_fee_bps` ≤ 10000;
+  - `list_traders(from_index?, limit?)` caps `limit` at 100.
+- **Extra view:** `get_config()` returns `{ owner_id, committer_id, platform_fee_bps,
+  platform_balance, trader_count }`.
+- **Storage:** `store` collections only write on `flush()`, so each payable method flushes before
+  measuring `env::storage_usage()`.
+- **Tests:**
+  - 49 unit tests, covering every rule in 7.2 plus the withdraw callbacks;
+  - 1 sandbox integration test on the real wasm. It covers deploy+init, register, `buy_key`,
+    `commit_log` (committer only), `withdraw`, `withdraw_platform` (owner only), and `#[private]`
+    enforcement on `new` and `on_withdraw`. The private checks only exist in the wasm wrapper, so
+    unit tests cannot cover them.
 
 ## Other decisions
 
