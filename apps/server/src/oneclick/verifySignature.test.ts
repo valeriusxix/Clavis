@@ -9,8 +9,11 @@ import type { QuoteResponse } from "./types";
 // Real MAINNET dry quote (public, wNEAR -> NEAR USDC), captured by `pnpm smoke:quote` on 2026-11-01.
 // Confidential (basic) quotes need credentials, so this one was requested without `confidentiality`.
 import mainnetPublicDryQuoteJson from "./__fixtures__/mainnet-public-dry-quote.json";
+// Real MAINNET *confidential* dry quote (confidentiality: "basic"), captured 2026-11-02 with the partner key.
+import mainnetBasicDryQuoteJson from "./__fixtures__/mainnet-basic-dry-quote.json";
 
 const MAINNET_PUBLIC_DRY_QUOTE = mainnetPublicDryQuoteJson as unknown as QuoteResponse;
+const MAINNET_BASIC_DRY_QUOTE = mainnetBasicDryQuoteJson as unknown as QuoteResponse;
 
 const withQuote = (r: QuoteResponse, patch: Partial<QuoteResponse["quote"]>): QuoteResponse => ({
   ...r,
@@ -66,5 +69,29 @@ describe("checkQuoteSignature (real mainnet quote, production key)", () => {
 
   it("rejects it under the staging key", () => {
     expect(checkQuoteSignature(MAINNET_PUBLIC_DRY_QUOTE, STAGING_MANAGER_PUB_KEY).valid).toBe(false);
+  });
+});
+
+describe("checkQuoteSignature (real mainnet confidential quote, production key)", () => {
+  it("accepts the saved confidential (basic) dry quote", () => {
+    expect(MAINNET_BASIC_DRY_QUOTE.quoteRequest.confidentiality).toBe("basic");
+    expect(checkQuoteSignature(MAINNET_BASIC_DRY_QUOTE).valid).toBe(true);
+  });
+
+  it("still verifies if confidentiality is flipped, because the field is not signed", () => {
+    // Documents a limitation: "1Click-signed" does not prove the swap was confidential.
+    const flipped = {
+      ...MAINNET_BASIC_DRY_QUOTE,
+      quoteRequest: { ...MAINNET_BASIC_DRY_QUOTE.quoteRequest, confidentiality: "public" },
+    } as QuoteResponse;
+    expect(checkQuoteSignature(flipped).valid).toBe(true);
+  });
+
+  it("rejects it when the destination asset is tampered", () => {
+    const tampered = {
+      ...MAINNET_BASIC_DRY_QUOTE,
+      quoteRequest: { ...MAINNET_BASIC_DRY_QUOTE.quoteRequest, destinationAsset: "nep141:usdt.tether-token.near" },
+    } as QuoteResponse;
+    expect(checkQuoteSignature(tampered).valid).toBe(false);
   });
 });

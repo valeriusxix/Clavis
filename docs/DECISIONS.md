@@ -48,8 +48,27 @@ does not. Definition of done #4 (a judge with no keys sees a real confidential q
 3. **Honest fallback:** with no credentials, the Trade page shows a clearly labelled **PUBLIC** dry quote
    and explains that confidential quotes need a key. `scripts/smoke-quote.ts` already does this (exit 3).
 
-Recommendation: (1) as the main path, plus (3) so `pnpm dev` with no keys still works and stays honest.
-Pending the human's decision.
+### Resolution (2026-11-02)
+
+- **Option 1 works.** With the partner key in `ONECLICK_API_KEY` (sent as `X-API-Key`), the
+  `confidentiality: "basic"` dry quote returns 201. It echoes `confidentiality: "basic"` and verifies
+  under the production key. It is saved as `__fixtures__/mainnet-basic-dry-quote.json`.
+  The echoed `appFees` show 1Click's 20 bps (authenticated schedule).
+- **Option 2 does not work** (tested with the human's approval).
+  - A throwaway `raw_ed25519` key signed an empty intent. The salt must come from `intents.near`
+    `current_salt` (RPC view; it was `252812b3` on 2026-11-02, while the docs' `e110f317` is stale and
+    gives `signature verification failed`).
+  - That gets a User-Session token (`/v0/auth/authenticate` 201, `expiresIn` 900).
+  - But `/v0/quote` rejects that token with `401 Invalid token`, both as a Bearer token and as
+    `X-API-Key`. **Confidential quotes need the partner key.**
+- **Decision:**
+  - The server sends the partner key. The hosted demo has it configured, so judges get real
+    confidential quotes there.
+  - With no key (fresh clone, `pnpm dev`), the Trade page falls back to a clearly labelled **PUBLIC**
+    dry quote and explains why (option 3). The README must say this, and AGENT.md 10.4 is out of date
+    on this point.
+  - The key lives only in `.env` (gitignored) and in the host's secret settings. It is never committed
+    and never sent to the browser.
 
 ---
 
