@@ -31,7 +31,7 @@ No wallet, no funds and no API keys needed. Every step says what to do and what 
 7. *(Optional)* Click **"Simulate fill"**.
    → The simulated trade appears in your own trader profile (**"View in your trader profile →"**), labeled **SIMULATED**.
 
-Your demo account is yours alone: each browser gets its own (shown in the header as `demo-… (demo)`), and **"Reset demo"** in the header starts a fresh one. Demo keys and simulated trades are deleted after 24 hours, a demo account can record up to 20 simulated trades, and demo profiles never appear on the leaderboard.
+Your demo account is yours alone: each browser gets its own (shown in the header as `demo-… (demo)` on wider screens), and **"Reset demo"** in the header starts a fresh one. Demo keys and simulated trades are deleted after 24 hours, a demo account can record up to 20 simulated trades, and demo profiles never appear on the leaderboard.
 
 ### Option B: Run it locally
 
