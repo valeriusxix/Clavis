@@ -257,3 +257,56 @@ AGENT.md section 9 is implemented as written. Where it is silent:
 - **Historical prices** come from the trades themselves: each trade implies a unit price for both legs
   (`v / q`). Live `/v0/tokens` prices override from their timestamp on. Seeded traders use the seed's
   price path.
+
+## Phase 2: server, seed and API choices (2026-11-02)
+
+**Schema** (`apps/server/src/db/schema.sql`), differences from AGENT.md 8.1:
+- `trades.seq` is NULL until the trade settles (SUCCESS or SIMULATED). The spec's `NOT NULL`
+  conflicts with "set on SUCCESS", because pending quotes have no seq yet.
+- `traders` gains `key_price_yocto`, `period_days` and `style`, for the leaderboard's `keyPrice`
+  and the trader cards.
+- New `price_history` table: the seed's price path, used for historical marks.
+
+**Demo seed** (`apps/server/src/demo/seed.ts`):
+- **Deterministic.** The timeline is fixed: 45 days ending **2026-11-11T00:00Z**, not "now". The
+  generator uses only `+ - * /` and integer PRNG operations, which IEEE-754 rounds exactly, so logs
+  are byte-identical on every machine and Node version. Stored numbers are fixed-precision strings.
+  This keeps the heads committed by `pnpm seed:chain` valid forever.
+- **Trades appear only once their time has passed** (seq stays contiguous), so nothing is
+  future-dated. Before 2026-11-11 the leaderboard shows the partial history. `pnpm seed:chain`
+  must run after 2026-11-11 to commit the complete heads.
+- Each trader follows a personality strategy against a seeded random-walk price path. One "execution
+  edge" per trader (price improvement versus the path; |edge| < 0.5%) is binary-searched so total PnL
+  hits the AGENT.md target:
+
+  | Trader | Target | Fills |
+  |---|---|---|
+  | quiet-whale | +38% | 28 |
+  | zec-maxi | +21% | 35 |
+  | scalp-sensei | +7%, 87% win rate | 60 |
+  | degen-dora | −14% | 34 |
+  | steady-eddie | +11% | 27 |
+- **Seeded traders are real testnet accounts**, e.g. `quiet-whale.clavis-app.testnet` (display name
+  `quiet-whale`). The reason: `commit_log` only accepts registered traders, and `register_trader`
+  registers the caller. `pnpm seed:chain` will create and register these subaccounts (human
+  approval needed).
+- **Assets:** wNEAR and NEAR-native USDC from live `/v0/tokens`; BTC and ETH (`*.omft.near`) from the
+  docs example. 1Click returned HTTP 521 for hours on 2026-11-02, so SOL and ZEC (`sol.omft.near`,
+  `zec.omft.near`) were verified via `ft_metadata` on NEAR mainnet instead. **Re-confirm them against
+  `/v0/tokens`.**
+
+**API** (AGENT.md 8.3 plus small additions):
+- `GET /api/me`, `GET /api/me/keys` and `POST /api/auth/logout`, for the web app.
+- `POST /api/auth/nep413` comes in Phase 3 with the wallet integration.
+- Sessions are signed, HTTP-only cookies (`@fastify/cookie`). `WEB_ORIGIN` sets the CORS allowlist
+  with credentials. In production, cookies are `SameSite=None; Secure` (web and API on different
+  hosts).
+- **Quotes** always send `confidentiality: "basic"`. A dry quote uses `intents.near` as its
+  placeholder recipient/refundTo, because 1Click rejects non-existent accounts and nothing is sent.
+  Real quotes require the trader's own `recipient` and `refundTo`.
+- **Without `ONECLICK_API_KEY`**, the server retries as a **PUBLIC** dry quote and returns a notice.
+  The response says `confidential: false`.
+- **Feed access:** the trader themselves; or an unexpired `demo_access` row; or (wallet sessions) the
+  contract's `has_access`, via an RPC view call.
+- **Prices:** `/v0/tokens` refreshes the `prices` table every 60 s (stablecoins = 1.0). If 1Click is
+  down, `/api/tokens` serves the seed assets.
