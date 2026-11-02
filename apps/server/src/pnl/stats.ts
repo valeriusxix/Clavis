@@ -117,7 +117,8 @@ export function traderStats(
     stats: {
       id: trader.account_id,
       name: trader.display_name,
-      simulated: trader.is_simulated === 1,
+      // Any simulated fill in the log makes the whole record SIMULATED (AGENT.md hard rule 9, AUDIT H2).
+      simulated: trader.is_simulated === 1 || rows.some((r) => r.is_simulated === 1),
       style: trader.style,
       createdAt: trader.created_at,
       pnl30dPct: round(w30.pnlPct),

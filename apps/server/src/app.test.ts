@@ -206,3 +206,34 @@ describe("dry quote -> Simulate fill", () => {
     await app.close();
   });
 });
+
+describe("SIMULATED labels (AUDIT H2)", () => {
+  for (const demo of ["true", "false"] as const) {
+    it(`a wallet user whose trades are simulated fills is labelled SIMULATED (DEMO_MODE=${demo})`, async () => {
+      const repo = new Repo(openDb(":memory:"));
+      await seedDatabase(repo, NOW, "/nonexistent/real-trades.json");
+      const app = await buildApp({
+        config: parseConfig({ DEMO_MODE: demo }),
+        repo,
+        oneclick: fakeOneClick(true),
+        tokens: new TokenCache({ getTokens: () => Promise.reject(new Error("offline")) }, repo, () => NOW),
+        now: () => NOW,
+        sessionSecret: "test-secret-test-secret-test-secret",
+        webOrigins: [],
+        cookie: { secure: false, sameSite: "lax" },
+        verifyNep413: async () => undefined, // signature accepted; the server's own rules are under test
+      });
+      const { nonce } = (await app.inject("/api/auth/challenge")).json() as { nonce: string };
+      const login = await app.inject({ method: "POST", url: "/api/auth/nep413", payload: { accountId: "bob.testnet", publicKey: "ed25519:abc", signature: "AAAA", nonce } });
+      const cookie = cookieOf(login);
+      const payload = { originAsset: SEED_ASSETS.NEAR.assetId, destinationAsset: SEED_ASSETS.USDC.assetId, amountHuman: "1" };
+      const q = await app.inject({ method: "POST", url: "/api/trades/quote", headers: { cookie }, payload });
+      expect((await app.inject({ method: "POST", url: `/api/trades/${q.json().tradeId}/simulate`, headers: { cookie } })).statusCode).toBe(200);
+
+      const bob = ((await app.inject("/api/traders")).json().traders as { id: string; simulated: boolean }[]).find((t) => t.id === "bob.testnet");
+      expect(bob).toMatchObject({ simulated: true });
+      expect((await app.inject("/api/traders/bob.testnet")).json().trader.simulated).toBe(true);
+      await app.close();
+    });
+  }
+});
