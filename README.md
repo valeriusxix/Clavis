@@ -22,8 +22,9 @@ No wallet, no funds and no API keys needed. Every step says what to do and what 
    → A banner says "Demo account — key purchase simulated". The feed **unlocks** and shows every trade: time, side, amounts, USD values, and a SIMULATED or status badge.
 4. **Click "Verify log".**
    → Your browser rebuilds the trader's hash chain and compares it with the hash stored in the Clavis contract on NEAR testnet. You see a **green checklist** and a link to the on-chain transaction. Click **"Tamper test"** to edit one entry in your downloaded copy: the panel turns **red**.
-5. **Open the trader `TODO: real trader id`.**
+5. **Open the trader `TODO: real trader id`, then click "Buy key" → "Use demo account".**
    → These are **real mainnet confidential trades** (tiny amounts). Each row shows **"1Click-signed ✓"**, meaning the quote was signed by NEAR Intents' 1Click service.
+   This demo trader's trades are published in the repo on purpose, so anyone can re-check the 1Click signatures. In normal use, trade feeds stay private until a key is bought.
 6. **Go to "Trade"**, leave **Dry run ON**, pick NEAR → USDC, enter `1`, click **"Get confidential quote"**.
    → You see a **live quote from the NEAR Intents 1Click API**, requested with `confidentiality: "basic"`, with the amounts in USD and "signed by 1Click". No funds move.
 7. *(Optional)* Click **"Simulate fill"**.
