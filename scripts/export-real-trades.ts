@@ -22,4 +22,5 @@ writeFileSync(REAL_TRADES_PATH, JSON.stringify(file, null, 2) + "\n");
 console.log(
   `exported ${file.trades.length} trades (${file.trades.filter((t) => t.status === "SUCCESS").length} SUCCESS) for ${config.REAL_TRADER_ID} -> ${REAL_TRADES_PATH}`,
 );
-console.log(`mainnet accounts in the file: ${accounts.length ? accounts.join(", ") : "(none)"}`);
+console.log(`accounts that paid, received or would be refunded: ${accounts.length ? accounts.join(", ") : "(none)"}`);
+console.log("(The file also contains 1Click deposit addresses and the raw quote/status responses.)");

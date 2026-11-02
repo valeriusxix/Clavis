@@ -6,7 +6,10 @@
 import type { Repo, TradeRow } from "../db/db";
 import type { RealTradesFile } from "./seedDb";
 
-/** Every account a trade touches: who paid, where the output went, where a refund would go. */
+/**
+ * The accounts a trade names as payer, recipient and refund address. (1Click's own deposit address and
+ * the raw quote/status responses are also in the file; they are not checked here.)
+ */
 export function accountsOf(t: TradeRow): string[] {
   let req: { recipient?: string; refundTo?: string } = {};
   try {
