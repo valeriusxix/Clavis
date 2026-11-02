@@ -5,9 +5,9 @@ import { makeNearVerifier } from "./auth/nep413";
 import { Committer, makeNearCommit } from "./chain/committer";
 import { DEFAULT_RPC, makeViewFn } from "./chain/nearView";
 import { StatusPoller } from "./jobs/statusPoller";
-import { loadDotEnv, parseConfig, REPO_ROOT } from "./config";
+import { loadDotEnv, parseConfig, REPO_ROOT, seedAccountsOf } from "./config";
 import { openDb, Repo } from "./db/db";
-import { seedDatabase } from "./demo/seedDb";
+import { loadSeedRegistrations, seedDatabase } from "./demo/seedDb";
 import { OneClickClient } from "./oneclick/client";
 import { TokenCache } from "./oneclick/tokens";
 
@@ -63,7 +63,7 @@ new StatusPoller({ repo, oneclick, now: Date.now, log, onSettled: () => void com
 
 if (config.DEMO_MODE) {
   // Demo mode reseeds on boot (deterministic, seed = 2026).
-  const summary = await seedDatabase(repo, Date.now());
+  const summary = await seedDatabase(repo, Date.now(), undefined, seedAccountsOf(config));
   console.log(`[clavis] demo seed: ${summary.traders} SIMULATED traders, ${summary.trades} trades, ${summary.realTrades} real trades`);
 }
 tokens.start(60_000); // also the price refresher (prices table)
@@ -82,6 +82,7 @@ const app = await buildApp({
   webOrigins: config.WEB_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean),
   cookie: production ? { secure: true, sameSite: "none" } : { secure: false, sameSite: "lax" },
   logger: true,
+  registrations: loadSeedRegistrations(),
 });
 
 await app.listen({ port: config.PORT, host: "0.0.0.0" });

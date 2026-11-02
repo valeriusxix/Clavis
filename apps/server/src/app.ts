@@ -3,7 +3,7 @@ import cors from "@fastify/cors";
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import { ZodError } from "zod";
 import type { ViewFn } from "./chain/nearView";
-import type { Config } from "./config";
+import { seedAccountsOf, type Config } from "./config";
 import type { Repo } from "./db/db";
 import { simTraderId, SEED_TRADERS } from "./demo/seed";
 import type { OneClickClient } from "./oneclick/client";
@@ -36,6 +36,8 @@ export type AppDeps = {
   webOrigins: string[];
   cookie: CookieOptions;
   logger?: boolean;
+  /** Seeded trader account -> register_trader tx, from `pnpm seed:chain` (Verify panel link). */
+  registrations?: ReadonlyMap<string, string>;
 };
 
 /** JSON error with a stable code: { error: { code, message } } (AGENT.md 8.3). */
@@ -72,7 +74,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   });
   const ctx: Ctx = {
     ...deps,
-    seededIds: new Set(SEED_TRADERS.map((t) => simTraderId(t.handle))),
+    seededIds: new Set(SEED_TRADERS.map((t) => simTraderId(t.handle, seedAccountsOf(deps.config)))),
     session: (req) => getSession(req, deps.now()),
     requireSession(req) {
       const s = getSession(req, deps.now());

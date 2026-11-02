@@ -25,7 +25,11 @@ const HOURS = SEED_DAYS * 24;
 const FEE = 0.002;
 /** Seeded traders are testnet subaccounts of the Clavis contract account (registered by seed:chain). */
 export const SEED_PARENT = "clavis-app.testnet";
-export const simTraderId = (handle: string) => `${handle}.${SEED_PARENT}`;
+/** <handle>[-<version>].<parent>. A new version means fresh accounts (docs/DECISIONS.md, "Re-seeding"). */
+export type SeedAccounts = { parent: string; version?: string };
+export const DEFAULT_SEED_ACCOUNTS: SeedAccounts = { parent: SEED_PARENT };
+export const simTraderId = (handle: string, accounts: SeedAccounts = DEFAULT_SEED_ACCOUNTS) =>
+  `${handle}${accounts.version ? `-${accounts.version}` : ""}.${accounts.parent}`;
 
 export type AssetKey = "NEAR" | "BTC" | "ETH" | "SOL" | "ZEC" | "USDC";
 
@@ -334,7 +338,7 @@ export function pnlOfFills(fills: SimFill[], paths: PricePaths) {
 export type SeededTrader = SeedTraderSpec & { traderId: string; edge: number; fills: SimFill[]; pnlPct: number };
 
 /** Generate all seeded traders (full timeline, before the "reveal up to now" filter). */
-export function generateSeed(paths = buildPricePaths()): SeededTrader[] {
+export function generateSeed(paths = buildPricePaths(), accounts: SeedAccounts = DEFAULT_SEED_ACCOUNTS): SeededTrader[] {
   return SEED_TRADERS.map((spec, i) => {
     const intents = spec.strategy(paths, mulberry32(SEED * 1000 + i + 1));
     // Binary-search the execution edge so total PnL% hits the target (monotonic in edge).
@@ -348,6 +352,6 @@ export function generateSeed(paths = buildPricePaths()): SeededTrader[] {
     }
     const edge = Number(((lo + hi) / 2).toFixed(6));
     const fills = fill(intents, paths, spec.startUsdc, edge);
-    return { ...spec, traderId: simTraderId(spec.handle), edge, fills, pnlPct: pnlOfFills(fills, paths).pnlPct };
+    return { ...spec, traderId: simTraderId(spec.handle, accounts), edge, fills, pnlPct: pnlOfFills(fills, paths).pnlPct };
   });
 }

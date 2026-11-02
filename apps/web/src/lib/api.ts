@@ -89,6 +89,8 @@ export type TraderLog = {
   signatureValid: Record<string, boolean | null>;
   head: { tradeCount: number; headHash: string } | null;
   committed: { count: number; tx: string | null } | null;
+  /** register_trader tx of a seeded trader (written by `pnpm seed:chain`). */
+  registrationTx: string | null;
   contractId: string | null;
   network: "testnet" | "mainnet";
 };

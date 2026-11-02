@@ -10,7 +10,7 @@ import { buildApp } from "../apps/server/src/app";
 import { makeNearVerifier } from "../apps/server/src/auth/nep413";
 import { DEFAULT_RPC } from "../apps/server/src/chain/nearView";
 import { serverHead } from "../apps/server/src/chain/hashchain";
-import { loadDotEnv, parseConfig } from "../apps/server/src/config";
+import { loadDotEnv, parseConfig, seedAccountsOf } from "../apps/server/src/config";
 import { openDb, Repo } from "../apps/server/src/db/db";
 import { seedDatabase } from "../apps/server/src/demo/seedDb";
 import { OneClickClient } from "../apps/server/src/oneclick/client";
@@ -31,7 +31,7 @@ async function startLocalServer(): Promise<{ url: string; close: () => Promise<v
   loadDotEnv(); // uses ONECLICK_API_KEY from .env if set
   const config = parseConfig({ ...process.env, DEMO_MODE: "true" });
   const repo = new Repo(openDb(":memory:"));
-  await seedDatabase(repo, Date.now());
+  await seedDatabase(repo, Date.now(), undefined, seedAccountsOf(config));
   const oneclick = new OneClickClient({ baseUrl: config.ONECLICK_BASE_URL, apiKey: config.ONECLICK_API_KEY });
   const tokens = new TokenCache(oneclick, repo);
   await tokens.refresh();

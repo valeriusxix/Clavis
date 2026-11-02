@@ -18,7 +18,8 @@
     "smoke:quote": "tsx scripts/smoke-quote.ts",
     "contract:test": "cd contracts/clavis && cargo test",
     "contract:build": "cd contracts/clavis && cargo near build non-reproducible-wasm",
-    "export:real": "tsx scripts/export-real-trades.ts"
+    "export:real": "tsx scripts/export-real-trades.ts",
+    "seed:chain": "tsx scripts/seed-chain.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

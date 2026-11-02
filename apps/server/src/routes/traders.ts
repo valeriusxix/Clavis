@@ -83,6 +83,8 @@ export function registerTraderRoutes(app: FastifyInstance, ctx: Ctx) {
       signatureValid: signatures,
       head: head ? { tradeCount: head.trade_count, headHash: head.head_hash } : null,
       committed: head ? { count: head.committed_count, tx: head.commit_tx } : null,
+      /** register_trader tx for seeded traders (from `pnpm seed:chain`), for an explorer link. */
+      registrationTx: ctx.registrations?.get(trader.account_id) ?? null,
       contractId: ctx.config.CLAVIS_CONTRACT_ID ?? null,
       network: ctx.config.NETWORK,
     };

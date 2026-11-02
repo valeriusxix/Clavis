@@ -104,6 +104,14 @@ async function verify(log: TraderLog, entries: LogEntry[], network: Network): Pr
                     </a>
                   </>
                 )}
+                {log.registrationTx && (
+                  <>
+                    {" · "}
+                    <a className="inline-flex items-center gap-1 text-brass hover:underline" href={explorerTxUrl(network, log.registrationTx)} target="_blank" rel="noreferrer">
+                      registration transaction <ExternalLink size={11} aria-hidden />
+                    </a>
+                  </>
+                )}
               </>
             ),
           });

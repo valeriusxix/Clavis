@@ -6,18 +6,37 @@ import { refreshChainHead } from "../chain/log";
 import { toBaseUnits, trimDecimal } from "../lib/units";
 import {
   buildPricePaths,
+  DEFAULT_SEED_ACCOUNTS,
   generateSeed,
   hourTime,
   SEED_ASSETS,
   SEED_DAYS,
   SEED_START,
   type AssetKey,
+  type SeedAccounts,
   type SeededTrader,
   type SimFill,
 } from "./seed";
 
 export const DEMO_VIEWER = "demo-viewer";
 export const REAL_TRADES_PATH = resolve(dirname(fileURLToPath(import.meta.url)), "real-trades.json");
+/** Written by `pnpm seed:chain`: the seeded traders' testnet accounts and registration transactions. */
+export const SEED_CHAIN_PATH = resolve(dirname(fileURLToPath(import.meta.url)), "seed-chain.json");
+
+export type SeedChainFile = {
+  network: "testnet";
+  contractId: string;
+  parent: string;
+  version: string | null;
+  traders: { handle: string; accountId: string; publicKey: string; registerTx: string | null }[];
+};
+
+/** accountId -> registration tx, from seed-chain.json (empty when the file does not exist). */
+export function loadSeedRegistrations(path = SEED_CHAIN_PATH): Map<string, string> {
+  if (!existsSync(path)) return new Map();
+  const file = JSON.parse(readFileSync(path, "utf8")) as SeedChainFile;
+  return new Map(file.traders.flatMap((t) => (t.registerTx ? [[t.accountId, t.registerTx] as const] : [])));
+}
 
 /** Shape of apps/server/src/demo/real-trades.json (written in Phase 4; public quote data only). */
 export type RealTradesFile = {
@@ -66,9 +85,14 @@ export type SeedSummary = { traders: number; trades: number; realTrades: number 
  * viewer's simulated profile, and demo key purchases. Only trades whose time has passed (`now`) are
  * inserted, so the seeded logs grow deterministically and nothing is future-dated.
  */
-export async function seedDatabase(repo: Repo, now: number, realTradesPath = REAL_TRADES_PATH): Promise<SeedSummary> {
+export async function seedDatabase(
+  repo: Repo,
+  now: number,
+  realTradesPath = REAL_TRADES_PATH,
+  accounts: SeedAccounts = DEFAULT_SEED_ACCOUNTS,
+): Promise<SeedSummary> {
   const paths = buildPricePaths();
-  const seeded = generateSeed(paths);
+  const seeded = generateSeed(paths, accounts);
   let trades = 0;
 
   repo.transaction(() => {

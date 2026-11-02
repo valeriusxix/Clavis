@@ -273,8 +273,8 @@ AGENT.md section 9 is implemented as written. Where it is silent:
   are byte-identical on every machine and Node version. Stored numbers are fixed-precision strings.
   This keeps the heads committed by `pnpm seed:chain` valid forever.
 - **Trades appear only once their time has passed** (seq stays contiguous), so nothing is
-  future-dated. Before 2026-11-11 the leaderboard shows the partial history. `pnpm seed:chain`
-  must run after 2026-11-11 to commit the complete heads.
+  future-dated. Before 2026-11-11 the leaderboard shows the partial history; a server running with
+  the committer key commits the longer log each time a trade is revealed.
 - Each trader follows a personality strategy against a seeded random-walk price path. One "execution
   edge" per trader (price improvement versus the path; |edge| < 0.5%) is binary-searched so total PnL
   hits the AGENT.md target:
@@ -288,8 +288,20 @@ AGENT.md section 9 is implemented as written. Where it is silent:
   | steady-eddie | +11% | 27 |
 - **Seeded traders are real testnet accounts**, e.g. `quiet-whale.clavis-app.testnet` (display name
   `quiet-whale`). The reason: `commit_log` only accepts registered traders, and `register_trader`
-  registers the caller. `pnpm seed:chain` will create and register these subaccounts (human
-  approval needed).
+  registers the caller. `pnpm seed:chain` creates and registers these subaccounts; the human runs it
+  (docs/SEEDING.md). The running server's committer then commits each head, so the script never
+  needs the committer key.
+- **Re-seeding (2026-11-02, AUDIT C3).** The contract only accepts a `trade_count` higher than the
+  committed one and cannot check that a new head extends the old one, and the committer refuses to
+  commit a log that does not extend the on-chain head. So if the seeded data ever changes
+  (generator, parameters, assets), the heads already committed for those accounts can never be
+  replaced. Instead of deleting state, the seed accounts are versioned:
+  `<handle>[-<version>].<parent>`, from `SEED_ACCOUNT_PARENT` (default `clavis-app.testnet`) and
+  `SEED_ACCOUNT_VERSION` (default none). `pnpm seed:chain --version v2` creates a fresh set, and
+  setting `SEED_ACCOUNT_VERSION=v2` makes the server use it. Display names stay the handles.
+  `seed:chain` writes `apps/server/src/demo/seed-chain.json` (account names and registration
+  transactions, no keys), which `/api/traders/:id/log` returns as `registrationTx` for the Verify
+  panel's link.
 - **Assets:** wNEAR and NEAR-native USDC from live `/v0/tokens`; BTC and ETH (`*.omft.near`) from the
   docs example. 1Click returned HTTP 521 for hours on 2026-11-02, so SOL and ZEC (`sol.omft.near`,
   `zec.omft.near`) were verified via `ft_metadata` on NEAR mainnet instead. **Re-confirm them against

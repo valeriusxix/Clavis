@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
+import type { SeedAccounts } from "./demo/seed";
 
 /** Repo root (apps/server/src -> ../../..). */
 export const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -42,9 +43,22 @@ const EnvSchema = z.object({
   /** Hard cap per real trade in USD (AGENT.md hard rule 7: <= $2). */
   REAL_TRADE_MAX_USD: z.preprocess(emptyToUndefined, z.coerce.number().positive().max(2).default(2)),
   NEAR_MAINNET_RPC_URL: optionalString,
+
+  /** Demo traders' testnet accounts: <handle>[-<version>].<parent> (docs/SEEDING.md). */
+  SEED_ACCOUNT_PARENT: z.preprocess(emptyToUndefined, z.string().default("clavis-app.testnet")),
+  /** Bump (v2, v3, ...) to use fresh accounts when the seeded logs change (docs/DECISIONS.md). */
+  SEED_ACCOUNT_VERSION: z.preprocess(emptyToUndefined, z.string().regex(/^[a-z0-9]+$/, "letters and digits only, e.g. v2").optional()),
+  /** Only for `pnpm seed:chain`: full-access key of SEED_ACCOUNT_PARENT. Never used by the server. */
+  SEED_PARENT_PRIVATE_KEY: optionalString,
 });
 
 export type Config = z.infer<typeof EnvSchema>;
+
+/** Where the seeded demo traders live on testnet. */
+export const seedAccountsOf = (config: Config): SeedAccounts => ({
+  parent: config.SEED_ACCOUNT_PARENT,
+  version: config.SEED_ACCOUNT_VERSION,
+});
 
 export function parseConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const result = EnvSchema.safeParse(env);

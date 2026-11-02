@@ -154,8 +154,8 @@ apps/web         React + Vite frontend
 apps/server      Node API: 1Click client, PnL engine, hash chain, committer, demo seed
 packages/shared  Hash chain + canonical JSON used by both browser and server
 contracts/clavis Rust NEAR contract: keys, access, earnings, log commitments
-scripts/         smoke-quote, seed-chain, smoke
-docs/            DECISIONS.md (what we learned and chose), DEPLOYMENTS.md (contract + transactions)
+scripts/         smoke, smoke-quote, seed-chain, export-real-trades
+docs/            DECISIONS.md (what we learned and chose), DEPLOYMENTS.md (contract + transactions), SEEDING.md (demo traders on testnet)
 ```
 
 ## Configuration
@@ -169,6 +169,7 @@ Copy `.env.example` to `.env`. Everything is optional in demo mode.
 | `CLAVIS_CONTRACT_ID` | Contract to read and commit to |
 | `COMMITTER_ACCOUNT_ID` / `COMMITTER_PRIVATE_KEY` | Account allowed to call `commit_log` (keep secret) |
 | `NEAR_RPC_URL` | NEAR RPC for the server (defaults to FASTNEAR for the network) |
+| `SEED_ACCOUNT_PARENT`, `SEED_ACCOUNT_VERSION` | Testnet accounts of the demo traders (`<handle>[-<version>].<parent>`); see `docs/SEEDING.md` |
 | `SESSION_SECRET`, `WEB_ORIGIN` | Session cookie signing key; browser origins allowed to call the API |
 | `VITE_API_URL`, `VITE_NETWORK`, `VITE_CLAVIS_CONTRACT_ID` | Frontend settings |
 
