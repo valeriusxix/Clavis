@@ -26,6 +26,17 @@ async function verify(log: TraderLog, entries: LogEntry[], network: Network): Pr
   const head = hashes[n]!;
   if (shape.length > 0) {
     steps.push({ state: "fail", title: "The log is malformed.", detail: shape.map((p) => `entry ${p.index + 1}: ${p.message}`).join("; ") });
+  } else if (log.head && log.head.tradeCount === n && log.head.headHash !== head) {
+    steps.push({
+      state: "fail",
+      title: "Recomputed head does not match the head Clavis publishes for this trader.",
+      detail: (
+        <>
+          browser <span className="num">{shortHash(head, 10)}</span> vs published <span className="num">{shortHash(log.head.headHash, 10)}</span>. An entry
+          was changed.
+        </>
+      ),
+    });
   } else {
     steps.push({
       state: "ok",

@@ -77,7 +77,8 @@ export function registerTradeRoutes(app: FastifyInstance, ctx: Ctx) {
         response = await ctx.oneclick.getQuote(publicRequest as QuoteRequest);
         notice = "No 1Click API key is configured, so this is a PUBLIC dry quote. Confidential (basic) quotes need a partner key.";
       } else if (err instanceof OneClickError) {
-        throw new ApiError(502, "ONECLICK_ERROR", err.message);
+        const reason = err.status === null ? "the 1Click API is unreachable right now" : `1Click answered HTTP ${err.status}`;
+        throw new ApiError(502, "ONECLICK_ERROR", `Could not get a quote: ${reason}. Please try again in a minute.`, { detail: err.message });
       } else {
         throw err;
       }

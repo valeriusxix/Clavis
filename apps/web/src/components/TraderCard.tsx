@@ -8,7 +8,7 @@ export function TraderCard({ t, rank }: { t: TraderStats; rank: number }) {
   return (
     <Link
       to={`/trader/${encodeURIComponent(t.id)}`}
-      className="group grid grid-cols-[2rem_1fr_auto] items-center gap-3 rounded-lg border border-line bg-ink-900 px-4 py-4 transition-colors hover:border-line-strong sm:grid-cols-[2rem_minmax(0,1.7fr)_repeat(4,minmax(0,1fr))_6.5rem]"
+      className="group grid grid-cols-[2rem_1fr_auto] items-center gap-3 rounded-lg border border-line bg-ink-900 px-4 py-4 transition-colors hover:border-line-strong sm:grid-cols-[2rem_minmax(0,1.7fr)_repeat(4,minmax(0,1fr))_7.5rem]"
       aria-label={`${t.name}: 30-day PnL ${pct(t.pnl30dPct)}`}
     >
       <span className="num text-sm text-faint">{rank}</span>
@@ -43,7 +43,7 @@ export function TraderCard({ t, rank }: { t: TraderStats; rank: number }) {
         </span>
         <span className="ml-auto flex items-center gap-1.5 text-brass sm:ml-0">
           <KeyRound size={14} aria-hidden />
-          <span className="num">{t.keyPriceNear} NEAR</span>
+          <span className="num whitespace-nowrap">{t.keyPriceNear} NEAR</span>
           <ChevronRight size={16} className="text-faint transition-transform group-hover:translate-x-0.5" aria-hidden />
         </span>
       </div>
