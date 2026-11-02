@@ -240,3 +240,20 @@ implemented as written, plus:
 Network access was opened on 2026-11-01. 1Click, the NEAR docs and NEAR RPC are reachable.
 `testnet.nearblocks.io` still answers 403 to curl (likely bot protection). It is only needed for
 explorer links, which the browser opens.
+
+## Phase 2: PnL engine choices (`apps/server/src/pnl/engine.ts`)
+
+AGENT.md section 9 is implemented as written. Where it is silent:
+- **Over-selling** (selling more than you hold): the held part costs the average cost, and the excess
+  costs the trade's own unit price (`vIn / qIn`). This equals the spec in both cases it defines
+  (nothing held: `vIn`; within holdings: `avgCost * qIn`).
+- **Win rate counts only closes.** A close is a disposal of a non-stablecoin asset that had a cost
+  basis. Buying with stablecoins, and first-time "funding" sales, are not sells for win-rate
+  purposes. Their fees and slippage still count in realized PnL. Without this, every DCA buy would
+  count as a losing "sell".
+- **Capital** = peak Σ cost basis across all assets, stablecoins included, with a $1 minimum.
+- **pnl30d** re-runs the same calculation over the last 30 days. It starts from the day −30 holdings,
+  marked to market at day −30 prices; that mark is the starting cost basis.
+- **Historical prices** come from the trades themselves: each trade implies a unit price for both legs
+  (`v / q`). Live `/v0/tokens` prices override from their timestamp on. Seeded traders use the seed's
+  price path.
