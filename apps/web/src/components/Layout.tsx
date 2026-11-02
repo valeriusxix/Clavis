@@ -54,14 +54,14 @@ export function Layout() {
             )}
           </div>
         </div>
-        <nav className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-2 pb-2 text-sm" aria-label="Main">
+        <nav className="mx-auto flex max-w-5xl gap-0.5 overflow-x-auto px-2 pb-2 text-sm sm:gap-1" aria-label="Main">
           {NAV.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
               end={n.end}
               className={({ isActive }) =>
-                `whitespace-nowrap rounded-md px-3 py-1.5 ${isActive ? "bg-ink-800 text-fg" : "text-muted hover:text-fg"}`
+                `whitespace-nowrap rounded-md px-2.5 py-1.5 sm:px-3 ${isActive ? "bg-ink-800 text-fg" : "text-muted hover:text-fg"}`
               }
             >
               {n.label}

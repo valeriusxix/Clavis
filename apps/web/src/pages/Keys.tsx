@@ -57,13 +57,13 @@ export function Keys() {
           )}
           {keys?.map((k) => (
             <Link key={k.traderId} to={`/trader/${encodeURIComponent(k.traderId)}`} className="block">
-              <Card className="flex items-center justify-between gap-3 p-4 hover:border-line-strong">
-                <span className="flex min-w-0 items-center gap-2">
+              <Card className="flex flex-col items-start gap-2 p-4 hover:border-line-strong sm:flex-row sm:items-center sm:justify-between">
+                <span className="flex min-w-0 flex-wrap items-center gap-2">
                   <KeyRound size={16} className={k.active ? "text-brass" : "text-faint"} aria-hidden />
-                  <span className="truncate font-medium">{k.traderName}</span>
+                  <span className="font-medium">{k.traderName}</span>
                   {k.simulated && <SimulatedBadge />}
                 </span>
-                <span className={`num text-xs ${k.active ? "text-muted" : "text-down"}`}>
+                <span className={`num whitespace-nowrap text-xs ${k.active ? "text-muted" : "text-down"}`}>
                   {k.active ? "until" : "expired"} {date(k.expiresAt)}
                 </span>
               </Card>
