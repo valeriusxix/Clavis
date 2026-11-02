@@ -310,3 +310,42 @@ AGENT.md section 9 is implemented as written. Where it is silent:
   contract's `has_access`, via an RPC view call.
 - **Prices:** `/v0/tokens` refreshes the `prices` table every 60 s (stablecoins = 1.0). If 1Click is
   down, `/api/tokens` serves the seed assets.
+
+## Phase 3: web app choices (2026-11-02)
+
+- **Wallet: `@hot-labs/near-connect` 0.12.0** (the human said to follow docs.near.org). docs.near.org
+  "Wallet Login" recommends it over Wallet Selector. It loads wallet code from a manifest in
+  sandboxed iframes. The connector is loaded lazily, so visitors without a wallet never load it. In
+  testing it offered Meteor, Intear, Ledger, Nightly and NEAR CLI on testnet.
+- **Login:** `GET /api/auth/challenge` gives a one-time 32-byte nonce (5 minutes). The wallet runs
+  `signMessage({ message: "Log in to Clavis", recipient: <contract id>, nonce })`. Then
+  `POST /api/auth/nep413` verifies with `near-api-js` 7.4 `verifyMessage`, which checks the ed25519
+  signature and that the key is FullAccess via RPC `view_access_key`
+  (docs.near.org "Backend Authentication").
+- **`buy_key` from the browser** attaches price + 0.01 NEAR. The contract refunds the unused
+  storage deposit.
+- **Verify panel**, all in the browser:
+  - The log is recomputed with Web Crypto using the same shared code as the server.
+  - `get_commitment` is read **directly from NEAR RPC**, not via the Clavis server.
+  - A commitment with `trade_count = C` is compared with the chain hash after the first C entries.
+    So entries newer than the last commit are reported, not marked as a failure; committing is
+    batched, and on-chain heads can lag the log.
+  - The recomputed head is also compared with the head Clavis publishes (the leaderboard's
+    `headHash`).
+  - "Tamper test" edits one entry in the downloaded copy, so anyone can watch the panel turn red.
+  - "Re-verify" asks the server to run the 1Click signature verifier again
+    (`POST /api/traders/:id/reverify`).
+- **`DisclosureAdapter`** (AGENT.md 6.5): routes read feeds and logs only through this interface.
+  `ClavisRelayAdapter` is the only implementation today; a `NativeViewKeyAdapter` can replace it.
+- **README differences from the 15.1 template:**
+  - Node 22.22+ (`near-api-js` 7.4 and `react-router` 8 need it).
+  - NEAR Connect instead of Wallet Selector.
+  - Repo directory `Clavis`.
+  - A note that local runs without `ONECLICK_API_KEY` get a PUBLIC quote.
+  - A Tamper test sentence.
+  - The honest signature-coverage line in the trust model.
+- **Design:** dark ink background, one accent (brass), green and red only as PnL data colors,
+  monospace for numbers and hashes, Lucide icons, blurred locked rows with a lock. Tested at
+  1280 px and 375 px (no horizontal overflow).
+- **Seed realism fix:** simulated fills now lose the 0.2% fee in USD, like real swaps. The calibrated
+  edge moves fill *prices* instead (|edge| ≤ 0.57%). quiet-whale has mistimed swings (win rate 86%).

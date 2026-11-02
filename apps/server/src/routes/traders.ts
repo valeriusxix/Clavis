@@ -1,7 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { ApiError, type Ctx } from "../app";
 import type { TradeRow } from "../db/db";
-import { logOf } from "../chain/log";
 import { DEMO_VIEWER } from "../demo/seedDb";
 import { buildPricing, traderStats } from "../pnl/stats";
 import type { QuoteResponse } from "../oneclick/types";
@@ -66,10 +65,7 @@ export function registerTraderRoutes(app: FastifyInstance, ctx: Ctx) {
   app.get<{ Params: { id: string } }>("/api/traders/:id/feed", async (req) => {
     const trader = getTraderOr404(req.params.id);
     if (!(await ctx.canSeeFeed(ctx.session(req), trader.account_id))) throw locked();
-    const rows = ctx.repo
-      .db.prepare(`SELECT * FROM trades WHERE trader_id = ? AND status != 'QUOTED' ORDER BY COALESCE(settled_at, created_at) DESC`)
-      .all(trader.account_id) as TradeRow[];
-    return { traderId: trader.account_id, trades: rows.map(feedRow) };
+    return { traderId: trader.account_id, trades: ctx.disclosure.trades(trader.account_id).map(feedRow), source: ctx.disclosure.name };
   });
 
   // Canonical log for in-browser hash-chain verification (same access rule as the feed).
@@ -82,7 +78,7 @@ export function registerTraderRoutes(app: FastifyInstance, ctx: Ctx) {
     );
     return {
       traderId: trader.account_id,
-      entries: logOf(ctx.repo, trader.account_id),
+      entries: ctx.disclosure.log(trader.account_id),
       /** Server-verified 1Click signature per seq (null = simulated / no signature). */
       signatureValid: signatures,
       head: head ? { tradeCount: head.trade_count, headHash: head.head_hash } : null,

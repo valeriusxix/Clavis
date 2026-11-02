@@ -9,6 +9,7 @@ import { simTraderId, SEED_TRADERS } from "./demo/seed";
 import type { OneClickClient } from "./oneclick/client";
 import type { TokenCache } from "./oneclick/tokens";
 import type { Verifier } from "./auth/nep413";
+import { ClavisRelayAdapter, type DisclosureAdapter } from "./disclosure/adapter";
 import { getSession, type CookieOptions, type Session } from "./auth/session";
 import { registerAuthRoutes } from "./routes/auth";
 import { registerKeyRoutes } from "./routes/keys";
@@ -52,6 +53,7 @@ export type Ctx = AppDeps & {
   session: (req: FastifyRequest) => Session | null;
   requireSession: (req: FastifyRequest) => Session;
   canSeeFeed: (session: Session | null, traderId: string) => Promise<boolean>;
+  disclosure: DisclosureAdapter;
 };
 
 export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
@@ -59,6 +61,13 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(cookie, { secret: deps.sessionSecret });
   await app.register(cors, { origin: deps.webOrigins, credentials: true });
 
+  const disclosure: DisclosureAdapter = new ClavisRelayAdapter({
+    repo: deps.repo,
+    now: deps.now,
+    contractId: deps.config.CLAVIS_CONTRACT_ID,
+    view: deps.view,
+    onViewError: (err) => app.log.warn({ err }, "has_access view call failed"),
+  });
   const ctx: Ctx = {
     ...deps,
     seededIds: new Set(SEED_TRADERS.map((t) => simTraderId(t.handle))),
@@ -68,24 +77,8 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
       if (!s) throw new ApiError(401, "UNAUTHENTICATED", "Log in first (demo account or wallet).");
       return s;
     },
-    async canSeeFeed(session, traderId) {
-      if (!session) return false;
-      if (session.sub === traderId) return true; // traders always see their own feed
-      const demoExpiry = deps.repo.getDemoAccessExpiry(traderId, session.sub);
-      if (demoExpiry && Date.parse(demoExpiry) > deps.now()) return true;
-      if (session.kind === "wallet" && deps.view && deps.config.CLAVIS_CONTRACT_ID) {
-        try {
-          return await deps.view<boolean>(deps.config.CLAVIS_CONTRACT_ID, "has_access", {
-            trader_id: traderId,
-            account_id: session.sub,
-          });
-        } catch (err) {
-          app.log.warn({ err }, "has_access view call failed");
-          return false;
-        }
-      }
-      return false;
-    },
+    canSeeFeed: (session, traderId) => disclosure.canSee(session, traderId),
+    disclosure,
   };
 
   app.setErrorHandler((err: unknown, _req: FastifyRequest, reply: FastifyReply) => {
