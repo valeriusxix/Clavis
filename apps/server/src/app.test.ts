@@ -167,6 +167,7 @@ describe("dry quote -> Simulate fill", () => {
     const sim = await app.inject({ method: "POST", url: `/api/trades/${quote.tradeId}/simulate`, headers: { cookie } });
     expect(sim.statusCode).toBe(200);
     expect(sim.json().trade).toMatchObject({ status: "SIMULATED", simulated: true, seq: 1 });
+    expect(sim.json().trade.oneClickSigned).toBe(false); // a simulated fill is not a signed trade (AUDIT L3)
     expect(sim.json().head.tradeCount).toBe(1);
 
     const again = await app.inject({ method: "POST", url: `/api/trades/${quote.tradeId}/simulate`, headers: { cookie } });

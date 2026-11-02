@@ -217,6 +217,7 @@ export function registerTradeRoutes(app: FastifyInstance, ctx: Ctx) {
       is_simulated: 1,
       confidentiality: "simulated",
       quote_signature: null,
+      signature_valid: null, // a simulated fill is not a signed trade (AUDIT L3)
       settled_at: new Date(ctx.now()).toISOString(),
     });
     const head = await refreshChainHead(ctx.repo, session.sub);
