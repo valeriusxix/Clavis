@@ -50,11 +50,13 @@ describe("NEP-413 verifier (real ed25519 signatures from near-api-js)", () => {
     let t = 1_000;
     const store = new ChallengeStore(() => t);
     const a = store.issue();
-    expect(store.consume(a.nonce)).toBe(true);
-    expect(store.consume(a.nonce)).toBe(false);
-    const b = store.issue();
+    expect(store.consume(a.nonce)).toBe("testnet");
+    expect(store.consume(a.nonce)).toBeNull();
+    const b = store.issue("mainnet");
+    expect(store.consume(b.nonce)).toBe("mainnet");
+    const c = store.issue();
     t += 6 * 60_000;
-    expect(store.consume(b.nonce)).toBe(false);
+    expect(store.consume(c.nonce)).toBeNull();
   });
 });
 
@@ -86,14 +88,16 @@ describe("POST /api/auth/nep413 -> wallet session -> contract has_access", () =>
 
     const login = await app.inject({ method: "POST", url: "/api/auth/nep413", payload: body });
     expect(login.statusCode).toBe(200);
-    expect(login.json()).toEqual({ account: "bob.testnet", kind: "wallet" });
+    expect(login.json()).toEqual({ account: "bob.testnet", kind: "wallet", payer: null });
     const cookie = login.cookies.map((c) => `${c.name}=${c.value}`).join("; ");
 
     const replay = await app.inject({ method: "POST", url: "/api/auth/nep413", payload: body });
     expect(replay.statusCode).toBe(401);
     expect(replay.json().error.code).toBe("BAD_CHALLENGE");
 
-    expect((await app.inject({ url: "/api/me", headers: { cookie } })).json()).toEqual({ session: { account: "bob.testnet", kind: "wallet" } });
+    expect((await app.inject({ url: "/api/me", headers: { cookie } })).json()).toEqual({
+      session: { account: "bob.testnet", kind: "wallet", payer: null },
+    });
     expect((await app.inject({ url: "/api/traders/quiet-whale.clavis-app.testnet/feed", headers: { cookie } })).statusCode).toBe(200);
     expect((await app.inject({ url: "/api/traders/zec-maxi.clavis-app.testnet/feed", headers: { cookie } })).statusCode).toBe(403);
     expect(views).toContain("has_access:quiet-whale.clavis-app.testnet:bob.testnet");

@@ -30,6 +30,8 @@ export type AppDeps = {
   view?: ViewFn;
   /** NEP-413 verifier (signature + FullAccess key check via RPC). */
   verifyNep413?: Verifier;
+  /** Same, against mainnet RPC: real mode logs in with the mainnet wallet that sends deposits. */
+  verifyNep413Mainnet?: Verifier;
   /** Allowed browser origins for CORS (credentials). */
   webOrigins: string[];
   cookie: CookieOptions;

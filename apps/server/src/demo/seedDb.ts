@@ -20,7 +20,12 @@ export const DEMO_VIEWER = "demo-viewer";
 export const REAL_TRADES_PATH = resolve(dirname(fileURLToPath(import.meta.url)), "real-trades.json");
 
 /** Shape of apps/server/src/demo/real-trades.json (written in Phase 4; public quote data only). */
-export type RealTradesFile = { traders: TraderRow[]; trades: TradeRow[] };
+export type RealTradesFile = {
+  traders: TraderRow[];
+  trades: TradeRow[];
+  /** commit_log transactions for these traders' heads (for explorer links). */
+  commits?: { traderId: string; tradeCount: number; tx: string }[];
+};
 
 function fillToRow(trader: SeededTrader, fill: SimFill, seq: number): TradeRow {
   const o = SEED_ASSETS[fill.sell];
@@ -127,5 +132,12 @@ export async function seedDatabase(repo: Repo, now: number, realTradesPath = REA
   }
 
   for (const tr of repo.listTraders()) await refreshChainHead(repo, tr.account_id);
+  if (existsSync(realTradesPath)) {
+    const real = JSON.parse(readFileSync(realTradesPath, "utf8")) as RealTradesFile;
+    for (const c of real.commits ?? []) {
+      const head = repo.getChainHead(c.traderId);
+      if (head && head.trade_count >= c.tradeCount && head.committed_count < c.tradeCount) repo.markCommitted(c.traderId, c.tradeCount, c.tx);
+    }
+  }
   return { traders: seeded.length, trades, realTrades };
 }

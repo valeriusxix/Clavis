@@ -35,3 +35,16 @@ All accounts were created with the testnet faucet (10 testnet NEAR each).
 
 `clavis-test-trader.testnet` and `clavis-test-buyer.testnet` are test accounts. The test trader is
 not one of the seeded demo traders, and its committed head is a test value.
+
+## Real trader identity (Phase 4, 2026-11-02)
+
+| Item | Value |
+|---|---|
+| Real trader (testnet identity on the leaderboard) | `real-trader.clavis-app.testnet` (subaccount of the contract account, 0.5 testnet NEAR) |
+| Create account tx | [`FaiE3Jss…`](https://explorer.testnet.near.org/transactions/FaiE3JssVmJkcz1VAWKnwKvmpYEBdCBtfiepNiGHCgCB) |
+| `register_trader("real-trader", 1 NEAR, 30 days)` tx | [`3bnmv9pH…`](https://explorer.testnet.near.org/transactions/3bnmv9pHwDoaTbqcxUqeP8dHShrDs455cnbgsqdKV6C8) |
+| On-chain genesis head | `3dc26694…c4c4` = `sha256("clavis:v1:real-trader.clavis-app.testnet")` (matches Python hashlib) |
+
+The real trades are made on NEAR Intents **mainnet** by a separate mainnet dev account owned by the
+human. The server maps that mainnet account to this testnet identity (`REAL_TRADER_MAINNET_ACCOUNT`).
+

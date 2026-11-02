@@ -2,7 +2,13 @@ import type {} from "@fastify/cookie"; // request.cookies / reply.setCookie type
 import type { FastifyReply, FastifyRequest } from "fastify";
 
 /** HTTP-only, signed session cookie. `demo` = demo-viewer (no wallet); `wallet` = NEP-413 login. */
-export type Session = { sub: string; kind: "demo" | "wallet"; exp: number };
+export type Session = {
+  sub: string;
+  kind: "demo" | "wallet";
+  exp: number;
+  /** Real mode: the mainnet account (linked to `sub`) that signs deposits. */
+  payer?: string;
+};
 
 export const SESSION_COOKIE = "clavis_session";
 const MAX_AGE_S = 7 * 24 * 3600;

@@ -23,28 +23,30 @@ export function makeNearVerifier(rpcUrlOrProvider: string | Provider): Verifier 
     });
 }
 
+export type LoginNetwork = "testnet" | "mainnet";
+
 /** One-time login challenges, kept in memory (a restart just means signing again). */
 export class ChallengeStore {
-  private readonly pending = new Map<string, number>();
+  private readonly pending = new Map<string, { exp: number; network: LoginNetwork }>();
   constructor(private readonly now: () => number) {}
 
-  issue(): { nonce: string; expiresAt: number } {
+  issue(network: LoginNetwork = "testnet"): { nonce: string; expiresAt: number; network: LoginNetwork } {
     this.sweep();
     const nonce = randomBytes(32).toString("base64");
     const expiresAt = this.now() + NONCE_TTL_MS;
-    this.pending.set(nonce, expiresAt);
-    return { nonce, expiresAt };
+    this.pending.set(nonce, { exp: expiresAt, network });
+    return { nonce, expiresAt, network };
   }
 
-  /** True once per issued, unexpired nonce. */
-  consume(nonce: string): boolean {
-    const exp = this.pending.get(nonce);
+  /** The challenge's network, once per issued, unexpired nonce; otherwise null. */
+  consume(nonce: string): LoginNetwork | null {
+    const c = this.pending.get(nonce);
     this.pending.delete(nonce);
-    return exp !== undefined && exp > this.now();
+    return c !== undefined && c.exp > this.now() ? c.network : null;
   }
 
   private sweep() {
     const t = this.now();
-    for (const [n, exp] of this.pending) if (exp <= t) this.pending.delete(n);
+    for (const [n, c] of this.pending) if (c.exp <= t) this.pending.delete(n);
   }
 }

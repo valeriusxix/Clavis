@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { ApiError, type Ctx } from "../app";
-import { ChallengeStore, LOGIN_MESSAGE } from "../auth/nep413";
+import { ChallengeStore, LOGIN_MESSAGE, type LoginNetwork } from "../auth/nep413";
 import { clearSession, setSession } from "../auth/session";
 import { DEMO_VIEWER } from "../demo/seedDb";
 
@@ -16,18 +16,26 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: Ctx) {
   const challenges = new ChallengeStore(ctx.now);
   const recipient = ctx.config.CLAVIS_CONTRACT_ID ?? "clavis";
 
-  app.get("/api/auth/challenge", async () => {
-    const c = challenges.issue();
-    return { nonce: c.nonce, message: LOGIN_MESSAGE, recipient, expiresAt: new Date(c.expiresAt).toISOString() };
+  // ?network=mainnet is for real mode: a mainnet wallet logs in as its linked real trader.
+  app.get<{ Querystring: { network?: string } }>("/api/auth/challenge", async (req) => {
+    const network: LoginNetwork = req.query.network === "mainnet" ? "mainnet" : "testnet";
+    const c = challenges.issue(network);
+    return { nonce: c.nonce, message: LOGIN_MESSAGE, recipient, network, expiresAt: new Date(c.expiresAt).toISOString() };
   });
 
   // Verify a NEP-413 signed message -> wallet session.
   app.post("/api/auth/nep413", async (req, reply) => {
-    if (!ctx.verifyNep413) throw new ApiError(503, "WALLET_LOGIN_UNAVAILABLE", "Wallet login is not configured on this server.");
     const body = Nep413Body.parse(req.body ?? {});
-    if (!challenges.consume(body.nonce)) throw new ApiError(401, "BAD_CHALLENGE", "Unknown or expired login challenge. Try again.");
+    const network = challenges.consume(body.nonce);
+    if (!network) throw new ApiError(401, "BAD_CHALLENGE", "Unknown or expired login challenge. Try again.");
+    const verify = network === "mainnet" ? ctx.verifyNep413Mainnet : ctx.verifyNep413;
+    if (!verify) throw new ApiError(503, "WALLET_LOGIN_UNAVAILABLE", `Wallet login (${network}) is not configured on this server.`);
+    // Mainnet logins are only for real mode, and only for the configured, linked account.
+    if (network === "mainnet" && (!ctx.config.REAL_TRADER_ID || body.accountId !== ctx.config.REAL_TRADER_MAINNET_ACCOUNT)) {
+      throw new ApiError(403, "NOT_LINKED", `${body.accountId} is not linked to a Clavis trader on this server.`);
+    }
     try {
-      await ctx.verifyNep413({
+      await verify({
         accountId: body.accountId,
         publicKey: body.publicKey,
         signature: new Uint8Array(Buffer.from(body.signature, "base64")),
@@ -37,8 +45,11 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: Ctx) {
     } catch (err) {
       throw new ApiError(401, "BAD_SIGNATURE", `Login rejected: ${(err as Error).message}`);
     }
-    const s = setSession(reply, { sub: body.accountId, kind: "wallet" }, ctx.now(), ctx.cookie);
-    return { account: s.sub, kind: s.kind };
+    const s =
+      network === "mainnet"
+        ? setSession(reply, { sub: ctx.config.REAL_TRADER_ID!, kind: "wallet", payer: body.accountId }, ctx.now(), ctx.cookie)
+        : setSession(reply, { sub: body.accountId, kind: "wallet" }, ctx.now(), ctx.cookie);
+    return { account: s.sub, kind: s.kind, payer: s.payer ?? null };
   });
 
   // Demo mode only: session as demo-viewer, no wallet needed.
@@ -50,7 +61,7 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: Ctx) {
 
   app.get("/api/me", async (req) => {
     const s = ctx.session(req);
-    return { session: s ? { account: s.sub, kind: s.kind } : null };
+    return { session: s ? { account: s.sub, kind: s.kind, payer: s.payer ?? null } : null };
   });
 
   app.post("/api/auth/logout", async (_req, reply) => {

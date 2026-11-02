@@ -200,7 +200,7 @@ describe("dry quote -> Simulate fill", () => {
     const cookie = cookieOf(await app.inject({ method: "POST", url: "/api/demo/login" }));
     const real = await app.inject({ method: "POST", url: "/api/trades/quote", headers: { cookie }, payload: { ...payload, dry: false } });
     expect(real.statusCode).toBe(403);
-    expect(real.json().error.code).toBe("REAL_MODE_NEEDS_WALLET");
+    expect(real.json().error.code).toBe("REAL_MODE_NEEDS_MAINNET_WALLET");
     const bad = await app.inject({ method: "POST", url: "/api/trades/quote", headers: { cookie }, payload: { ...payload, amountHuman: "1e3" } });
     expect(bad.statusCode).toBe(400);
     await app.close();

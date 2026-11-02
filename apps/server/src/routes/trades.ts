@@ -39,14 +39,23 @@ export function registerTradeRoutes(app: FastifyInstance, ctx: Ctx) {
   app.post("/api/trades/quote", async (req) => {
     const session = ctx.requireSession(req);
     const body = QuoteBody.parse(req.body ?? {});
-    if (!body.dry && session.kind !== "wallet") {
-      throw new ApiError(403, "REAL_MODE_NEEDS_WALLET", "Real trades need a connected wallet. Dry run works with the demo account.");
+    if (!body.dry && (session.kind !== "wallet" || !session.payer)) {
+      throw new ApiError(403, "REAL_MODE_NEEDS_MAINNET_WALLET", "Real trades need the linked mainnet wallet. Dry run works with the demo account.");
     }
     const origin = ctx.tokens.find(body.originAsset);
     const dest = ctx.tokens.find(body.destinationAsset);
     if (!origin || !dest) throw new ApiError(400, "UNKNOWN_ASSET", "originAsset/destinationAsset must come from /api/tokens.");
-    if (!body.dry && (!body.recipient || !body.refundTo)) {
-      throw new ApiError(400, "RECIPIENT_REQUIRED", "Real quotes need your own recipient and refundTo addresses.");
+    const cap = ctx.config.REAL_TRADE_MAX_USD;
+    if (!body.dry) {
+      // Real mode: NEAR-chain tokens only, so the deposit is one wallet transaction and the output goes
+      // back to the same mainnet account; hard cap per trade (AGENT.md hard rule 7).
+      if (origin.blockchain !== "near" || dest.blockchain !== "near") {
+        throw new ApiError(400, "NEAR_TOKENS_ONLY", "Real trades use NEAR-chain tokens only (for example NEAR → USDC).");
+      }
+      const estimate = Number(body.amountHuman) * origin.price;
+      if (!(estimate > 0) || estimate > cap) {
+        throw new ApiError(400, "OVER_CAP", `Real trades are capped at $${cap}. This one is about $${estimate.toFixed(2)}.`);
+      }
     }
 
     const request: QuoteRequest = {
@@ -57,9 +66,9 @@ export function registerTradeRoutes(app: FastifyInstance, ctx: Ctx) {
       depositType: "ORIGIN_CHAIN" as QuoteRequest.depositType,
       destinationAsset: dest.assetId,
       amount: toBaseUnits(body.amountHuman, origin.decimals),
-      recipient: body.recipient ?? DRY_QUOTE_ACCOUNT,
+      recipient: body.dry ? (body.recipient ?? DRY_QUOTE_ACCOUNT) : session.payer!,
       recipientType: "DESTINATION_CHAIN" as QuoteRequest.recipientType,
-      refundTo: body.refundTo ?? DRY_QUOTE_ACCOUNT,
+      refundTo: body.dry ? (body.refundTo ?? DRY_QUOTE_ACCOUNT) : session.payer!,
       refundType: "ORIGIN_CHAIN" as QuoteRequest.refundType,
       confidentiality: "basic" as QuoteRequest.confidentiality,
       deadline: new Date(ctx.now() + 10 * 60_000).toISOString(),
@@ -124,8 +133,16 @@ export function registerTradeRoutes(app: FastifyInstance, ctx: Ctx) {
       created_at: new Date(ctx.now()).toISOString(),
       settled_at: null,
     };
+    if (!body.dry) {
+      row.payer = session.payer ?? null;
+      if (!(Number(q.amountInUsd) <= cap * 1.02) || !q.depositAddress) {
+        row.status = "FAILED";
+        ctx.repo.insertTrade(row);
+        throw new ApiError(400, "OVER_CAP", `1Click priced this trade at $${q.amountInUsd}, above the $${cap} cap. Nothing was sent.`);
+      }
+      row.status = "PENDING_DEPOSIT";
+    }
     ctx.repo.insertTrade(row);
-    if (!body.dry) ctx.repo.updateTrade(row.id, { status: "PENDING_DEPOSIT" });
 
     return {
       tradeId: row.id,
@@ -186,14 +203,14 @@ export function registerTradeRoutes(app: FastifyInstance, ctx: Ctx) {
       await ctx.oneclick.submitDeposit({
         txHash: body.txHash,
         depositAddress: trade.deposit_address,
-        ...(body.nearSenderAccount ? { nearSenderAccount: body.nearSenderAccount } : {}),
+        nearSenderAccount: body.nearSenderAccount ?? session.payer ?? session.sub,
         ...(trade.deposit_memo ? { memo: trade.deposit_memo } : {}),
       });
     } catch (err) {
       if (err instanceof OneClickError) throw new ApiError(502, "ONECLICK_ERROR", err.message);
       throw err;
     }
-    ctx.repo.updateTrade(trade.id, { tx_hash: body.txHash, status: "KNOWN_DEPOSIT_TX" });
+    ctx.repo.updateTrade(trade.id, { tx_hash: body.txHash, status: "KNOWN_DEPOSIT_TX", payer: session.payer ?? trade.payer ?? null });
     return { trade: feedRow(ctx.repo.getTrade(trade.id)!) };
   });
 

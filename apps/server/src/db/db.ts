@@ -5,8 +5,18 @@ import Database from "better-sqlite3";
 
 export type DB = Database.Database;
 
-export const SCHEMA_VERSION = 1;
 const SCHEMA_SQL = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "schema.sql"), "utf8");
+
+/** Ordered migrations; index + 1 = schema version. */
+const MIGRATIONS: string[] = [
+  SCHEMA_SQL,
+  // v2 (Phase 4, real trades): the final 1Click status response, where the logged amounts came from
+  // ("final" from swapDetails, "quoted" from the quote), and the mainnet account that sent the deposit.
+  `ALTER TABLE trades ADD COLUMN status_json TEXT;
+   ALTER TABLE trades ADD COLUMN amounts_source TEXT;
+   ALTER TABLE trades ADD COLUMN payer TEXT;`,
+];
+export const SCHEMA_VERSION = MIGRATIONS.length;
 
 /** Open (and create/migrate) the database. Use ":memory:" in tests. */
 export function openDb(path: string): DB {
@@ -15,9 +25,11 @@ export function openDb(path: string): DB {
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
   const version = db.pragma("user_version", { simple: true }) as number;
-  if (version < SCHEMA_VERSION) {
-    db.exec(SCHEMA_SQL);
-    db.pragma(`user_version = ${SCHEMA_VERSION}`);
+  for (let v = version; v < SCHEMA_VERSION; v++) {
+    db.transaction(() => {
+      db.exec(MIGRATIONS[v]!);
+      db.pragma(`user_version = ${v + 1}`);
+    })();
   }
   return db;
 }
@@ -73,7 +85,20 @@ export type TradeRow = {
   signature_valid: number | null;
   created_at: string;
   settled_at: string | null;
+  /** v2: raw final GET /v0/status response (real trades). */
+  status_json?: string | null;
+  /** v2: "final" (status swapDetails) or "quoted" (quote amounts). */
+  amounts_source?: "final" | "quoted" | null;
+  /** v2: mainnet account that sent the deposit (real trades). */
+  payer?: string | null;
 };
+
+const TRADE_COLUMNS = [
+  "id", "trader_id", "seq", "status", "is_simulated", "origin_asset", "origin_symbol", "dest_asset", "dest_symbol",
+  "amount_in", "amount_in_formatted", "amount_in_usd", "amount_out", "amount_out_formatted", "amount_out_usd",
+  "confidentiality", "deposit_address", "deposit_memo", "tx_hash", "quote_json", "quote_signature", "signature_valid",
+  "created_at", "settled_at", "status_json", "amounts_source", "payer",
+] as const;
 
 export type ChainHeadRow = {
   trader_id: string;
@@ -113,13 +138,8 @@ export class Repo {
   // trades
   insertTrade(t: TradeRow): void {
     this.db
-      .prepare(
-        `INSERT INTO trades VALUES (@id, @trader_id, @seq, @status, @is_simulated, @origin_asset, @origin_symbol,
-          @dest_asset, @dest_symbol, @amount_in, @amount_in_formatted, @amount_in_usd, @amount_out,
-          @amount_out_formatted, @amount_out_usd, @confidentiality, @deposit_address, @deposit_memo, @tx_hash,
-          @quote_json, @quote_signature, @signature_valid, @created_at, @settled_at)`,
-      )
-      .run(t);
+      .prepare(`INSERT INTO trades (${TRADE_COLUMNS.join(", ")}) VALUES (${TRADE_COLUMNS.map((c) => `@${c}`).join(", ")})`)
+      .run({ status_json: null, amounts_source: null, payer: null, ...t });
   }
   getTrade(id: string): TradeRow | undefined {
     return this.db.prepare(`SELECT * FROM trades WHERE id = ?`).get(id) as TradeRow | undefined;
@@ -140,10 +160,16 @@ export class Repo {
   allSettledTrades(): TradeRow[] {
     return this.db.prepare(`SELECT * FROM trades WHERE seq IS NOT NULL ORDER BY settled_at`).all() as TradeRow[];
   }
+  /** Real trades still waiting on 1Click (have a deposit address, not terminal). */
   nonTerminalTrades(): TradeRow[] {
     return this.db
-      .prepare(`SELECT * FROM trades WHERE status IN ('PENDING_DEPOSIT','KNOWN_DEPOSIT_TX','PROCESSING')`)
+      .prepare(
+        `SELECT * FROM trades WHERE status IN ('PENDING_DEPOSIT','KNOWN_DEPOSIT_TX','PROCESSING') AND deposit_address IS NOT NULL`,
+      )
       .all() as TradeRow[];
+  }
+  chainHeads(): ChainHeadRow[] {
+    return this.db.prepare(`SELECT * FROM chain_heads`).all() as ChainHeadRow[];
   }
   nextSeq(traderId: string): number {
     const row = this.db.prepare(`SELECT MAX(seq) AS m FROM trades WHERE trader_id = ?`).get(traderId) as { m: number | null };
