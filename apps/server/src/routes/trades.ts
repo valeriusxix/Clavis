@@ -58,6 +58,12 @@ export function registerTradeRoutes(app: FastifyInstance, ctx: Ctx) {
       }
     }
 
+    let amount: string;
+    try {
+      amount = toBaseUnits(body.amountHuman, origin.decimals);
+    } catch (err) {
+      throw new ApiError(400, "BAD_AMOUNT", `${(err as Error).message}. ${origin.symbol} has ${origin.decimals} decimals.`);
+    }
     const request: QuoteRequest = {
       dry: body.dry,
       swapType: "EXACT_INPUT" as QuoteRequest.swapType,
@@ -65,7 +71,7 @@ export function registerTradeRoutes(app: FastifyInstance, ctx: Ctx) {
       originAsset: origin.assetId,
       depositType: "ORIGIN_CHAIN" as QuoteRequest.depositType,
       destinationAsset: dest.assetId,
-      amount: toBaseUnits(body.amountHuman, origin.decimals),
+      amount,
       recipient: body.dry ? (body.recipient ?? DRY_QUOTE_ACCOUNT) : session.payer!,
       recipientType: "DESTINATION_CHAIN" as QuoteRequest.recipientType,
       refundTo: body.dry ? (body.refundTo ?? DRY_QUOTE_ACCOUNT) : session.payer!,
@@ -78,19 +84,24 @@ export function registerTradeRoutes(app: FastifyInstance, ctx: Ctx) {
     let response: QuoteResponse;
     let notice: string | null = null;
     try {
-      response = await ctx.oneclick.getQuote(request);
-    } catch (err) {
-      if (err instanceof OneClickError && err.status === 401 && body.dry && !ctx.oneclick.hasApiKey) {
+      try {
+        response = await ctx.oneclick.getQuote(request);
+      } catch (err) {
+        if (!(err instanceof OneClickError && err.status === 401 && body.dry && !ctx.oneclick.hasApiKey)) throw err;
         // Confidential quotes need a 1Click partner key. Fall back to a clearly labelled PUBLIC dry quote.
         const { confidentiality: _omit, ...publicRequest } = request;
         response = await ctx.oneclick.getQuote(publicRequest as QuoteRequest);
         notice = "No 1Click API key is configured, so this is a PUBLIC dry quote. Confidential (basic) quotes need a partner key.";
-      } else if (err instanceof OneClickError) {
-        const reason = err.status === null ? "the 1Click API is unreachable right now" : `1Click answered HTTP ${err.status}`;
-        throw new ApiError(502, "ONECLICK_ERROR", `Could not get a quote: ${reason}. Please try again in a minute.`, { detail: err.message });
-      } else {
-        throw err;
       }
+    } catch (err) {
+      if (!(err instanceof OneClickError)) throw err;
+      // 1Click refused this request (e.g. "Amount is too low", "No liquidity available"): say why (AUDIT M1).
+      const reason = (err.body as { message?: unknown } | null)?.message;
+      if (err.status === 400 && typeof reason === "string") {
+        throw new ApiError(400, "QUOTE_REJECTED", `1Click could not quote this trade: ${reason}.`, { detail: err.message });
+      }
+      const why = err.status === null ? "the 1Click API is unreachable right now" : `1Click answered HTTP ${err.status}`;
+      throw new ApiError(502, "ONECLICK_ERROR", `Could not get a quote: ${why}. Please try again in a minute.`, { detail: err.message });
     }
 
     const sig = checkQuoteSignature(response);

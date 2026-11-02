@@ -237,3 +237,54 @@ describe("SIMULATED labels (AUDIT H2)", () => {
     });
   }
 });
+
+describe("quote errors are clear JSON, never a bare 500 (AUDIT M1)", () => {
+  async function appWith(getQuote: OneClickLike["getQuote"]) {
+    const repo = new Repo(openDb(":memory:"));
+    await seedDatabase(repo, NOW, "/nonexistent/real-trades.json");
+    const app = await buildApp({
+      config: parseConfig({ DEMO_MODE: "true" }),
+      repo,
+      oneclick: { hasApiKey: false, getQuote, submitDeposit: () => Promise.reject(new Error("x")), getStatus: () => Promise.reject(new Error("x")) },
+      tokens: new TokenCache({ getTokens: () => Promise.reject(new Error("offline")) }, repo, () => NOW),
+      now: () => NOW,
+      sessionSecret: "test-secret-test-secret-test-secret",
+      webOrigins: [],
+      cookie: { secure: false, sameSite: "lax" },
+    });
+    const cookie = cookieOf(await app.inject({ method: "POST", url: "/api/demo/login" }));
+    const quote = (amountHuman: string) =>
+      app.inject({ method: "POST", url: "/api/trades/quote", headers: { cookie }, payload: { originAsset: SEED_ASSETS.NEAR.assetId, destinationAsset: SEED_ASSETS.USDC.assetId, amountHuman } });
+    return { app, quote };
+  }
+
+  it("1Click refusing the PUBLIC fallback (no key) gives a 400 with 1Click's reason", async () => {
+    const { app, quote } = await appWith(async (req) => {
+      if (req.confidentiality === "basic") throw new OneClickError("401", 401, { message: "User authentication is required for confidential intent quotes" });
+      throw new OneClickError("1Click POST /v0/quote -> HTTP 400", 400, { message: "No liquidity available" });
+    });
+    const res = await quote("5000000");
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error).toMatchObject({ code: "QUOTE_REJECTED" });
+    expect(res.json().error.message).toMatch(/No liquidity available/);
+    await app.close();
+  });
+
+  it("an amount with more decimals than the token has is a 400", async () => {
+    const { app, quote } = await appWith(async () => publicQuote as unknown as QuoteResponse);
+    const res = await quote("0.0000000000000000000000001");
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.code).toBe("BAD_AMOUNT");
+    await app.close();
+  });
+
+  it("1Click unreachable is a 502 that says so", async () => {
+    const { app, quote } = await appWith(async () => {
+      throw new OneClickError("network error", null, null);
+    });
+    const res = await quote("1");
+    expect(res.statusCode).toBe(502);
+    expect(res.json().error.message).toMatch(/unreachable/);
+    await app.close();
+  });
+});
