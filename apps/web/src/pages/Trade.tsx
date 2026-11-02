@@ -212,6 +212,11 @@ function QuoteCard({ q }: { q: QuoteResult }) {
           <Info size={14} className="mt-0.5 shrink-0" aria-hidden /> {q.notice}
         </p>
       )}
+      {q.routing?.privacyWarning && (
+        <p role="alert" className="mt-3 flex gap-2 rounded-md border border-down/60 bg-down/5 px-3 py-2 text-xs text-fg">
+          <ShieldAlert size={14} className="mt-0.5 shrink-0 text-down" aria-hidden /> Privacy warning: {q.routing.privacyWarning}
+        </p>
+      )}
       <div className="mt-4">
         <div className="text-xs text-muted">You receive</div>
         <div className="num text-3xl">
@@ -404,6 +409,7 @@ function RealDeposit({ q }: { q: QuoteResult }) {
               </span>
               . Your wallet will show the exact transaction to approve.
             </p>
+            {q.routing?.privacyWarning && <p className="mt-2 text-sm text-down">Privacy warning: {q.routing.privacyWarning}</p>}
             <div className="mt-5 flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setConfirming(false)}>
                 Cancel

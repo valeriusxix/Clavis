@@ -119,6 +119,8 @@ export type QuoteResult = {
   origin: { assetId: string; symbol: string };
   destination: { assetId: string; symbol: string };
   signature: { valid: boolean; publicKey: string; signature: string | null };
+  /** Where the output goes. privacyWarning is set when it lands on-chain in the paying account (AUDIT C4). */
+  routing: { recipient: string; recipientType: string; payer: string | null; privacyWarning: string | null };
   correlationId: string;
   timestamp: string;
 };

@@ -5,6 +5,9 @@
 // Nothing executes and no funds move: dry quotes return no deposit address.
 //
 // Usage: pnpm smoke:quote [--amount 1] [--dest-chain near] [--save path.json] [--no-public-fallback]
+//                         [--recipient-type DESTINATION_CHAIN|INTENTS|CONFIDENTIAL_INTENTS]
+//        --recipient-type CONFIDENTIAL_INTENTS checks whether 1Click accepts an on-chain deposit whose
+//        output stays in the recipient's Confidential Intents balance (AUDIT C4). Needs ONECLICK_API_KEY.
 // Env:   ONECLICK_BASE_URL, ONECLICK_API_KEY (optional), SMOKE_ACCOUNT (an EXISTING mainnet NEAR
 //        account used as recipient/refundTo in the dry quote; nothing is sent to it. A non-existent
 //        account makes 1Click answer HTTP 400 "Internal server error").
@@ -27,8 +30,13 @@ const { values: args } = parseArgs({
     "dest-chain": { type: "string", default: "near" },
     save: { type: "string" },
     "no-public-fallback": { type: "boolean", default: false },
+    "recipient-type": { type: "string", default: "DESTINATION_CHAIN" },
   },
 });
+const RECIPIENT_TYPES = ["DESTINATION_CHAIN", "INTENTS", "CONFIDENTIAL_INTENTS"];
+if (!RECIPIENT_TYPES.includes(args["recipient-type"])) {
+  throw new Error(`--recipient-type must be one of ${RECIPIENT_TYPES.join(", ")}`);
+}
 
 /** "1.5" + 24 decimals -> "1500000000000000000000000". Integer math only, never floats. */
 export function toBaseUnits(human: string, decimals: number): string {
@@ -75,7 +83,7 @@ async function main() {
     destinationAsset: dest.assetId,
     amount: toBaseUnits(args.amount, origin.decimals),
     recipient: account,
-    recipientType: "DESTINATION_CHAIN" as QuoteRequest.recipientType,
+    recipientType: args["recipient-type"] as QuoteRequest.recipientType,
     refundTo: account,
     refundType: "ORIGIN_CHAIN" as QuoteRequest.refundType,
     confidentiality: "basic" as QuoteRequest.confidentiality,

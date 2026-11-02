@@ -144,6 +144,10 @@ export function registerTradeRoutes(app: FastifyInstance, ctx: Ctx) {
     }
     ctx.repo.insertTrade(row);
 
+    // AUDIT C4: if the output lands on-chain in the account that pays, anyone can see both sides.
+    const payer = body.dry ? null : (session.payer ?? null);
+    const backToPayer = payer !== null && request.recipientType === "DESTINATION_CHAIN" && request.recipient === payer;
+
     return {
       tradeId: row.id,
       dry: body.dry,
@@ -166,6 +170,14 @@ export function registerTradeRoutes(app: FastifyInstance, ctx: Ctx) {
       origin: { assetId: origin.assetId, symbol: origin.symbol },
       destination: { assetId: dest.assetId, symbol: dest.symbol },
       signature: { valid: sig.valid, publicKey: sig.publicKey, signature: sig.signature },
+      routing: {
+        recipient: request.recipient,
+        recipientType: request.recipientType,
+        payer,
+        privacyWarning: backToPayer
+          ? `The output goes back to ${payer}, the same public account that pays. Anyone looking at that account on an explorer can see what this trade bought.`
+          : null,
+      },
       correlationId: response.correlationId,
       timestamp: response.timestamp,
     };
