@@ -119,6 +119,10 @@ describe("real mode (Phase 4)", () => {
     expect(over.statusCode).toBe(400);
     expect(over.json().error.code).toBe("OVER_CAP");
     expect(priced.repo.db.prepare(`SELECT status FROM trades WHERE trader_id = ?`).all(REAL)).toEqual([{ status: "FAILED" }]);
+    // Kept as a record, but nothing was sent, so it is not a trade in the feed (AUDIT L4).
+    const feed = await priced.app.inject({ url: `/api/traders/${REAL}/feed`, headers: { cookie: c2 } });
+    expect(feed.statusCode).toBe(200);
+    expect(feed.json().trades).toEqual([]);
   });
 
   it("real trades are NEAR-chain only", async () => {

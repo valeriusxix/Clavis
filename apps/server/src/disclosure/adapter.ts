@@ -55,7 +55,12 @@ export class ClavisRelayAdapter implements DisclosureAdapter {
 
   trades(traderId: string): TradeRow[] {
     return this.deps.repo.db
-      .prepare(`SELECT * FROM trades WHERE trader_id = ? AND status != 'QUOTED' ORDER BY COALESCE(settled_at, created_at) DESC`)
+      // Not shown: unfilled quotes, and quotes Clavis refused before anything was sent (FAILED without
+      // any 1Click status; kept as a record, AUDIT L4).
+      .prepare(
+        `SELECT * FROM trades WHERE trader_id = ? AND status != 'QUOTED' AND NOT (status = 'FAILED' AND status_json IS NULL)
+           ORDER BY COALESCE(settled_at, created_at) DESC`,
+      )
       .all(traderId) as TradeRow[];
   }
 
