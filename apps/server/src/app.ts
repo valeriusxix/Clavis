@@ -68,6 +68,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   const disclosure: DisclosureAdapter = new ClavisRelayAdapter({
     repo: deps.repo,
     now: deps.now,
+    demoMode: deps.config.DEMO_MODE,
     contractId: deps.config.CLAVIS_CONTRACT_ID,
     view: deps.view,
     onViewError: (err) => app.log.warn({ err }, "has_access view call failed"),

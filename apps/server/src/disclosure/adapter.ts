@@ -27,6 +27,8 @@ export class ClavisRelayAdapter implements DisclosureAdapter {
     private readonly deps: {
       repo: Repo;
       now: () => number;
+      /** Demo keys (demo_access rows) count only in demo mode (AUDIT L2). */
+      demoMode: boolean;
       contractId?: string;
       view?: ViewFn;
       onViewError?: (err: unknown) => void;
@@ -36,8 +38,10 @@ export class ClavisRelayAdapter implements DisclosureAdapter {
   async canSee(viewer: Session | null, traderId: string): Promise<boolean> {
     if (!viewer) return false;
     if (viewer.sub === traderId) return true; // traders always see their own feed
-    const demoExpiry = this.deps.repo.getDemoAccessExpiry(traderId, viewer.sub);
-    if (demoExpiry && Date.parse(demoExpiry) > this.deps.now()) return true;
+    if (this.deps.demoMode) {
+      const demoExpiry = this.deps.repo.getDemoAccessExpiry(traderId, viewer.sub);
+      if (demoExpiry && Date.parse(demoExpiry) > this.deps.now()) return true;
+    }
     if (viewer.kind === "wallet" && this.deps.view && this.deps.contractId) {
       try {
         return await this.deps.view<boolean>(this.deps.contractId, "has_access", { trader_id: traderId, account_id: viewer.sub });

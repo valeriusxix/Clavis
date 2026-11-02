@@ -288,3 +288,32 @@ describe("quote errors are clear JSON, never a bare 500 (AUDIT M1)", () => {
     await app.close();
   });
 });
+
+describe("DEMO_MODE=false ignores demo keys (AUDIT L2)", () => {
+  it("an old demo cookie and demo_access row from a demo run no longer unlock a feed", async () => {
+    const repo = new Repo(openDb(":memory:"));
+    await seedDatabase(repo, NOW, "/nonexistent/real-trades.json");
+    const mk = (demo: "true" | "false") =>
+      buildApp({
+        config: parseConfig({ DEMO_MODE: demo }),
+        repo,
+        oneclick: fakeOneClick(false),
+        tokens: new TokenCache({ getTokens: () => Promise.reject(new Error("offline")) }, repo, () => NOW),
+        now: () => NOW,
+        sessionSecret: "same-secret-same-secret-same-secret",
+        webOrigins: [],
+        cookie: { secure: false, sameSite: "lax" },
+      });
+    const id = "quiet-whale.clavis-app.testnet";
+    const demoApp = await mk("true");
+    const cookie = cookieOf(await demoApp.inject({ method: "POST", url: "/api/demo/login" }));
+    await demoApp.inject({ method: "POST", url: "/api/demo/buy-key", headers: { cookie }, payload: { traderId: id } });
+    expect((await demoApp.inject({ url: `/api/traders/${id}/feed`, headers: { cookie } })).statusCode).toBe(200);
+
+    const prod = await mk("false");
+    expect((await prod.inject({ url: `/api/traders/${id}/feed`, headers: { cookie } })).statusCode).toBe(403);
+    expect((await prod.inject({ url: `/api/traders/${id}/log`, headers: { cookie } })).statusCode).toBe(403);
+    await demoApp.close();
+    await prod.close();
+  });
+});
