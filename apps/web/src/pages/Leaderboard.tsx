@@ -17,7 +17,7 @@ export function Leaderboard() {
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">Leaderboard</h1>
       <p className="mt-1 max-w-2xl text-sm text-muted">
-        Traders ranked by 30-day PnL. Their trades are hidden and run through NEAR Confidential Intents. Every trader's log is
+        Traders ranked by 30-day PnL. Their trades are hidden until you buy a key; real trades run through NEAR Confidential Intents. Every trader's log is
         hash-chained, and its latest hash is committed to the Clavis contract on NEAR ("Trades committed" shows how many trades
         that hash covers). Buy a key to see the trades.
       </p>

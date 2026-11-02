@@ -73,7 +73,7 @@ Clavis splits a trader's record into two layers:
 |---|---|
 | **Everyone** | Verified PnL, win rate, trade count, and an on-chain fingerprint (hash) of the full trade history |
 | **Key holders** | Every trade, in full, while their key is active |
-| **The public chain** | Nothing about what was traded. Confidential Intents makes deposits and withdrawals unlinkable. |
+| **The public chain** | That the trader deposited some amount of token A into 1Click, but not what it was swapped into or where it went, as long as the output is not sent back to the same public account. |
 
 Traders set a key price in NEAR. Followers pay through the Clavis smart contract, and the trader withdraws their earnings.
 
@@ -121,6 +121,7 @@ Fees are included automatically because we use what was actually received. Full 
 ## Trust model (honest version)
 
 - Clavis's server **sees the trades placed through it**, because it relays the quotes. Traders trust the Clavis operator with their trade details.
+- The public chain sees that a trader deposited some amount of token A into 1Click. It does not see what that was swapped into or where it went, **as long as the output is not sent back to the same public account**. If the output lands in the account that paid, anyone looking at that account sees both sides of the trade.
 - Clavis **cannot invent trades** (each real trade carries 1Click's signature) and **cannot rewrite history** (hash heads are on-chain).
 - A 1Click signature covers the quote's assets, amounts, recipient and timestamp. It does **not** cover the confidentiality setting, so "1Click-signed ✓" alone does not prove a swap was confidential.
 - Only trades placed **through Clavis** count, so traders can't cherry-pick wins made elsewhere.

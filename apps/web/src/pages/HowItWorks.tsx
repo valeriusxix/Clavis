@@ -30,7 +30,8 @@ export function HowItWorks() {
       <ol className="space-y-5">
         <Step icon={<EyeOff size={18} />} title="Trade privately">
           Traders request a quote from the NEAR Intents 1Click API with confidentiality "basic". The swap runs through Confidential
-          Intents, so deposits and withdrawals cannot be linked on the public chain.
+          Intents: the chain sees that the trader deposited some amount of token A into 1Click, but not what it was swapped into or
+          where it went, as long as the output is not sent back to the same public account.
         </Step>
         <Step icon={<Fingerprint size={18} />} title="Record and prove">
           Clavis stores each trade with 1Click's signed quote, so trades cannot be invented. PnL is computed from what was actually
@@ -66,7 +67,10 @@ export function HowItWorks() {
         <h2 className="font-medium">Trust model (honest version)</h2>
         <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-muted">
           <li>The public sees PnL, win rate, trade count and the on-chain hash head. Not trades.</li>
-          <li>The chain sees deposits into 1Click and the hash commitments, but cannot link what a trader bought.</li>
+          <li>
+            The chain sees the hash commitments and that a trader deposited some amount of a token into 1Click. It does not see what the
+            deposit was swapped into or where it went, unless the output is sent back to the same public account that paid.
+          </li>
           <li>
             The Clavis server sees every trade placed through it, because it relays the quotes. Traders trust the Clavis operator with their
             trade details.
