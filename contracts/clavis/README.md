@@ -32,3 +32,6 @@ Events (NEP-297, `standard: "clavis"`): `trader_registered`, `key_purchased`, `l
 cargo test                              # unit tests + sandbox integration test
 cargo near build non-reproducible-wasm  # -> target/near/clavis.wasm
 ```
+
+`cargo test` needs Linux or macOS (on Windows, use WSL): `near-sandbox` has no Windows build, and the
+test dependencies build `aws-lc-sys` (needs NASM) and vendored OpenSSL (needs Perl).

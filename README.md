@@ -51,7 +51,10 @@ Check everything automatically:
 ```bash
 pnpm test     # PnL engine, hash chain, signature checks, access rules, API
 pnpm smoke    # end-to-end check of every public endpoint + the demo flow
+cd contracts/clavis && cargo test   # contract: unit tests + local NEAR sandbox test (Rust; Linux or macOS)
 ```
+
+> `cargo test` needs Linux or macOS: the sandbox test runs a local NEAR node (`near-sandbox`), which has no Windows build, and the test dependencies compile NASM and OpenSSL code. On Windows, run it inside WSL.
 
 > In local demo mode with no contract configured, step 4 still recomputes the hash chain and marks the on-chain check as "skipped". Set `CLAVIS_CONTRACT_ID` in `.env` to compare against testnet.
 >
