@@ -13,10 +13,9 @@ const RPC: Record<Network, string> = {
   mainnet: "https://rpc.mainnet.fastnear.com",
 };
 
-export const explorerTxUrl = (network: Network, tx: string) =>
-  network === "testnet"
-    ? `https://explorer.testnet.near.org/transactions/${tx}`
-    : `https://explorer.near.org/transactions/${tx}`;
+/** Opens the transaction itself (explorer.near.org only shows an explorer chooser, AUDIT L5). */
+export const explorerTxUrl = (network: Network, tx: string) => `https://nearvalidate.org/txns/${tx}?network=${network}`;
+/** The chooser lists explorers for the account (nearvalidate's testnet account page shows no data). */
 export const explorerAccountUrl = (network: Network, account: string) =>
   network === "testnet"
     ? `https://explorer.testnet.near.org/accounts/${account}`

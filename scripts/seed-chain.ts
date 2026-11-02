@@ -38,7 +38,7 @@ const { values: args } = parseArgs({
 });
 
 const KEYS_DIR = resolve(REPO_ROOT, ".secrets", "seed-accounts");
-const explorerTx = (hash: string) => `https://testnet.nearblocks.io/txns/${hash}`;
+const explorerTx = (hash: string) => `https://nearvalidate.org/txns/${hash}?network=testnet`;
 
 async function main() {
   loadDotEnv();
