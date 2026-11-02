@@ -349,3 +349,44 @@ AGENT.md section 9 is implemented as written. Where it is silent:
   1280 px and 375 px (no horizontal overflow).
 - **Seed realism fix:** simulated fills now lose the 0.2% fee in USD, like real swaps. The calibrated
   edge moves fill *prices* instead (|edge| ≤ 0.57%). quiet-whale has mistimed swings (win rate 86%).
+
+## Phase 4: real mode design (2026-11-02, human chose option (a) and `real-trader.clavis-app.testnet`)
+
+- **Identity.**
+  - The contract lives on testnet; real trades happen on mainnet. The real trader is
+    `real-trader.clavis-app.testnet`, a subaccount of the contract account, registered at
+    1 NEAR / 30 days.
+  - Exactly one mainnet account (`REAL_TRADER_MAINNET_ACCOUNT`) may place real trades as it.
+  - Login for real mode is NEP-413 against **mainnet** RPC (`/api/auth/challenge?network=mainnet`).
+    The session becomes `{ sub: real trader, payer: mainnet account }`. Any other mainnet account
+    gets `403 NOT_LINKED`.
+- **Real quotes** (`dry: false`):
+  - NEAR-chain tokens only (wNEAR, USDC, USDT on NEAR). The deposit is one wallet transaction, and
+    `recipient` and `refundTo` are forced to the payer's own mainnet account.
+  - **$2 cap** (`REAL_TRADE_MAX_USD`, max 2). Checked before quoting, using the token price; a quote
+    over the cap is refused without ever requesting a deposit address. Checked again against
+    1Click's `amountInUsd` (2% tolerance); over it, the trade is stored as FAILED and no deposit
+    address is shown.
+- **Deposit transaction** (one wallet approval, to the origin token contract):
+  1. `storage_deposit { account_id: depositAddress, registration_only: true }`, attaching the
+     contract's `storage_balance_bounds().min` (refunded if already registered);
+  2. `near_deposit`, which wraps native NEAR (origin wNEAR only);
+  3. `ft_transfer { receiver_id: depositAddress, amount: amountIn }` with 1 yoctoNEAR.
+
+  The tx hash goes to `POST /v0/deposit/submit` (with `nearSenderAccount`).
+- **Status poller** (5 s), until a terminal status. On SUCCESS:
+  - the full status response is stored in `trades.status_json`;
+  - amounts come from `swapDetails` when all six fields are present (`amounts_source = "final"`);
+    otherwise the quote amounts are kept (`"quoted"`);
+  - `settled_at` is the status `updatedAt`; seq is assigned and the chain head extended.
+
+  REFUNDED, FAILED and INCOMPLETE_DEPOSIT are stored and shown, but never enter the log.
+  **To check against the first real response:** whether `swapDetails.amountIn` / `amountOut` are
+  base units, as the SDK model implies.
+- **Committer** (10 s tick, at most one `commit_log` per trader per 30 s):
+  - signed with `COMMITTER_PRIVATE_KEY`;
+  - skips traders not registered on-chain;
+  - marks heads that are already on-chain as committed without sending a transaction.
+- **Export.** `pnpm export:real` writes the real trader's settled and terminal trades, plus the
+  commit tx, to `apps/server/src/demo/real-trades.json`. That is public quote and status data only.
+  Demo mode loads it on boot.
