@@ -221,9 +221,10 @@ export function VerifyPanel({ traderId, network }: { traderId: string; network: 
           ))}
         </ol>
       )}
-      {log && result?.verdict !== "red" && (
+      {log && result && (
         <p className="mt-3 text-xs text-faint">
-          Hashing ran in your browser (Web Crypto). The commitment was read directly from NEAR {network} RPC, not from the Clavis server.
+          Hashing ran in your browser (Web Crypto).
+          {result.steps[2]?.state !== "skip" && <> The commitment was read directly from NEAR {network} RPC, not from the Clavis server.</>}
         </p>
       )}
     </section>
