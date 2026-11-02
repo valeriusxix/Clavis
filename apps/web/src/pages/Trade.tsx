@@ -8,7 +8,8 @@ import { qty, shortHash, usd } from "../lib/format";
 import { explorerTxUrl, sendDeposit } from "../lib/near";
 import { useSession } from "../lib/session";
 
-const TERMINAL = new Set(["SUCCESS", "REFUNDED", "FAILED", "INCOMPLETE_DEPOSIT"]);
+/** Final 1Click statuses. INCOMPLETE_DEPOSIT is not final, so the page keeps polling (AUDIT L1). */
+const TERMINAL = new Set(["SUCCESS", "REFUNDED", "FAILED"]);
 const REAL_CAP_USD = 2;
 
 const label = (t: Token) => (t.symbol === "wNEAR" ? "NEAR (wNEAR)" : t.blockchain === "near" ? t.symbol : `${t.symbol} (${t.blockchain})`);
@@ -371,9 +372,15 @@ function RealDeposit({ q }: { q: QuoteResult }) {
               </li>
             );
           })}
-          {["REFUNDED", "FAILED", "INCOMPLETE_DEPOSIT"].includes(status) && (
+          {["REFUNDED", "FAILED"].includes(status) && (
             <li className="flex items-center gap-2 text-down">
               <CircleX size={14} aria-hidden /> <span className="num">{status}</span>: 1Click returns the deposit to {session?.payer}.
+            </li>
+          )}
+          {status === "INCOMPLETE_DEPOSIT" && (
+            <li className="flex items-center gap-2 text-down">
+              <CircleX size={14} aria-hidden /> <span className="num">{status}</span>: 1Click received less than this quote needs. Waiting
+              for its final status.
             </li>
           )}
           <li className="text-xs text-muted">

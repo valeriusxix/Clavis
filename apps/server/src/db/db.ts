@@ -58,7 +58,8 @@ export type TradeStatus =
   | "SIMULATED";
 
 export const SETTLED_STATUSES: readonly TradeStatus[] = ["SUCCESS", "SIMULATED"];
-export const TERMINAL_STATUSES: readonly TradeStatus[] = ["SUCCESS", "INCOMPLETE_DEPOSIT", "REFUNDED", "FAILED", "SIMULATED"];
+/** INCOMPLETE_DEPOSIT is not final: 1Click can still move the trade on (AUDIT L1). */
+export const TERMINAL_STATUSES: readonly TradeStatus[] = ["SUCCESS", "REFUNDED", "FAILED", "SIMULATED"];
 
 export type TradeRow = {
   id: string;
@@ -164,7 +165,7 @@ export class Repo {
   nonTerminalTrades(): TradeRow[] {
     return this.db
       .prepare(
-        `SELECT * FROM trades WHERE status IN ('PENDING_DEPOSIT','KNOWN_DEPOSIT_TX','PROCESSING') AND deposit_address IS NOT NULL`,
+        `SELECT * FROM trades WHERE status IN ('PENDING_DEPOSIT','KNOWN_DEPOSIT_TX','PROCESSING','INCOMPLETE_DEPOSIT') AND deposit_address IS NOT NULL`,
       )
       .all() as TradeRow[];
   }

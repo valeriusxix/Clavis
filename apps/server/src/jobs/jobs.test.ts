@@ -79,6 +79,16 @@ describe("StatusPoller", () => {
   });
 });
 
+describe("StatusPoller and INCOMPLETE_DEPOSIT (AUDIT L1)", () => {
+  it("keeps polling a trade in INCOMPLETE_DEPOSIT until 1Click reports a final status", async () => {
+    const repo = setup();
+    repo.insertTrade({ ...pending("t1", "d1"), status: "INCOMPLETE_DEPOSIT" });
+    const poller = new StatusPoller({ repo, now: () => NOW, oneclick: { getStatus: async () => statusOf("REFUNDED") } });
+    await poller.tick();
+    expect(repo.getTrade("t1")!.status).toBe("REFUNDED");
+  });
+});
+
 describe("Committer", () => {
   async function withSettledTrades(n: number) {
     const repo = setup();
