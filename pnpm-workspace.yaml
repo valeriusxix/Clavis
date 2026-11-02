@@ -5,4 +5,9 @@ packages:
 # Packages allowed to run install scripts (pnpm 10 blocks them by default).
 onlyBuiltDependencies:
   - esbuild
+
+# better-sqlite3 ships prebuilt binaries (prebuilds/*.node). Running its install script would compile
+# it from source with node-gyp, which needs Python and a C++ toolchain, so `pnpm install` failed on
+# machines without them. Skip the script and use the prebuild.
+ignoredBuiltDependencies:
   - better-sqlite3
