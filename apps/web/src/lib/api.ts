@@ -121,7 +121,7 @@ export type QuoteResult = {
   timestamp: string;
 };
 
-export type SessionInfo = { account: string; kind: "demo" | "wallet" } | null;
+export type SessionInfo = { account: string; kind: "demo" | "wallet"; payer?: string | null } | null;
 export type MyKey = { traderId: string; traderName: string; expiresAt: string; active: boolean; simulated: boolean };
 
 export const api = {
@@ -142,9 +142,13 @@ export const api = {
   demoBuyKey: (traderId: string) =>
     request<{ traderId: string; expiresAt: string; simulated: true }>("/api/demo/buy-key", { method: "POST", body: { traderId } }),
   logout: () => request<{ ok: true }>("/api/auth/logout", { method: "POST" }),
-  challenge: () => request<{ nonce: string; message: string; recipient: string; expiresAt: string }>("/api/auth/challenge"),
+  challenge: (network: "testnet" | "mainnet" = "testnet") =>
+    request<{ nonce: string; message: string; recipient: string; expiresAt: string }>(`/api/auth/challenge?network=${network}`),
   nep413Login: (body: { accountId: string; publicKey: string; signature: string; nonce: string }) =>
-    request<{ account: string; kind: "wallet" }>("/api/auth/nep413", { method: "POST", body }),
+    request<{ account: string; kind: "wallet"; payer: string | null }>("/api/auth/nep413", { method: "POST", body }),
+  deposit: (tradeId: string, txHash: string) =>
+    request<{ trade: FeedTrade }>(`/api/trades/${tradeId}/deposit`, { method: "POST", body: { txHash } }),
+  trade: (tradeId: string) => request<{ trade: FeedTrade; depositAddress: string | null }>(`/api/trades/${tradeId}`),
   quote: (body: { originAsset: string; destinationAsset: string; amountHuman: string; dry: boolean; recipient?: string; refundTo?: string }) =>
     request<QuoteResult>("/api/trades/quote", { method: "POST", body }),
   simulate: (tradeId: string) =>

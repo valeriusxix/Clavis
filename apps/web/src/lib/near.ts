@@ -57,17 +57,18 @@ export const getAccess = (network: Network, contractId: string, traderId: string
 
 // ----------------------------------------------------------------------------- wallet
 
-let connectorPromise: Promise<NearConnector> | null = null;
+// One connector per network: testnet for keys/login, mainnet for real-mode deposits.
+const connectors = new Map<Network, Promise<NearConnector>>();
 
 export function getConnector(network: Network): Promise<NearConnector> {
-  connectorPromise ??= import("@hot-labs/near-connect").then(
-    ({ NearConnector }) =>
-      new NearConnector({
-        network,
-        features: { signMessage: true, signAndSendTransaction: true },
-      }),
-  );
-  return connectorPromise;
+  let c = connectors.get(network);
+  if (!c) {
+    c = import("@hot-labs/near-connect").then(
+      ({ NearConnector }) => new NearConnector({ network, features: { signMessage: true, signAndSendTransaction: true } }),
+    );
+    connectors.set(network, c);
+  }
+  return c;
 }
 
 export async function connectWallet(network: Network): Promise<{ wallet: NearWalletBase; accountId: string }> {
@@ -122,3 +123,47 @@ export async function buyKeyOnChain(wallet: NearWalletBase, contractId: string, 
     ],
   });
 }
+
+// ----------------------------------------------------------------------------- real-mode deposit
+
+/** NEP-145 storage_balance_bounds of a token contract (yoctoNEAR strings). */
+export const storageBounds = (network: Network, tokenContract: string) =>
+  viewCall<{ min: string; max: string | null }>(network, tokenContract, "storage_balance_bounds", {});
+
+/** "nep141:wrap.near" -> "wrap.near" */
+export const tokenContractOf = (assetId: string) => {
+  if (!assetId.startsWith("nep141:")) throw new Error(`Not a NEAR NEP-141 asset: ${assetId}`);
+  return assetId.slice("nep141:".length);
+};
+
+/**
+ * Send the 1Click deposit in ONE wallet transaction to the origin token contract:
+ *   1. storage_deposit for the deposit address (registration_only: refunded if already registered),
+ *   2. near_deposit (wrap native NEAR) when the origin is wNEAR,
+ *   3. ft_transfer of exactly amountIn to the deposit address (1 yoctoNEAR attached).
+ * Returns the transaction hash.
+ */
+export async function sendDeposit(
+  wallet: NearWalletBase,
+  network: Network,
+  q: { originAsset: string; amountIn: string; depositAddress: string },
+): Promise<string | null> {
+  const contract = tokenContractOf(q.originAsset);
+  const bounds = await storageBounds(network, contract);
+  const actions: Parameters<NearWalletBase["signAndSendTransaction"]>[0]["actions"] = [
+    {
+      type: "FunctionCall",
+      params: { methodName: "storage_deposit", args: { account_id: q.depositAddress, registration_only: true }, gas: "30000000000000", deposit: bounds.min },
+    },
+  ];
+  if (contract === "wrap.near") {
+    actions.push({ type: "FunctionCall", params: { methodName: "near_deposit", args: {}, gas: "10000000000000", deposit: q.amountIn } });
+  }
+  actions.push({
+    type: "FunctionCall",
+    params: { methodName: "ft_transfer", args: { receiver_id: q.depositAddress, amount: q.amountIn }, gas: "30000000000000", deposit: "1" },
+  });
+  const outcome = await wallet.signAndSendTransaction({ receiverId: contract, actions });
+  return (outcome as { transaction?: { hash?: string } } | undefined)?.transaction?.hash ?? null;
+}
+

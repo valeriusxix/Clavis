@@ -1,11 +1,15 @@
-import { ArrowDown, BadgeCheck, CircleX, FlaskConical, Info, ShieldAlert } from "lucide-react";
+import { ArrowDown, BadgeCheck, CircleCheck, CircleX, FlaskConical, Info, Send, ShieldAlert, Wallet } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { ConfidentialBadge, SimulatedBadge } from "../components/Badge";
 import { Button, Card, ErrorNote, Spinner } from "../components/ui";
 import { api, type FeedTrade, type QuoteResult, type Token } from "../lib/api";
 import { qty, shortHash, usd } from "../lib/format";
+import { explorerTxUrl, sendDeposit } from "../lib/near";
 import { useSession } from "../lib/session";
+
+const TERMINAL = new Set(["SUCCESS", "REFUNDED", "FAILED", "INCOMPLETE_DEPOSIT"]);
+const REAL_CAP_USD = 2;
 
 const label = (t: Token) => (t.symbol === "wNEAR" ? "NEAR (wNEAR)" : t.blockchain === "near" ? t.symbol : `${t.symbol} (${t.blockchain})`);
 
@@ -39,8 +43,18 @@ export function Trade() {
 
   // Keep origin tokens on NEAR (NEP-141): the deposit is then one wallet ft_transfer (AGENT.md 6.2).
   const origins = useMemo(() => tokens?.filter((t) => t.blockchain === "near") ?? [], [tokens]);
-  const dests = useMemo(() => tokens?.filter((t) => t.assetId !== origin) ?? [], [tokens, origin]);
+  // Real mode keeps both sides on NEAR: one wallet transaction in, output back to the same account.
+  const dests = useMemo(
+    () => tokens?.filter((t) => t.assetId !== origin && (dry || t.blockchain === "near")) ?? [],
+    [tokens, origin, dry],
+  );
+  useEffect(() => {
+    if (dests.length && !dests.some((t) => t.assetId === dest)) setDest(dests[0]!.assetId);
+  }, [dests, dest]);
   const amountOk = /^\d+(\.\d+)?$/.test(amount) && Number(amount) > 0;
+  const originToken = tokens?.find((t) => t.assetId === origin);
+  const estimateUsd = originToken && amountOk ? Number(amount) * originToken.price : 0;
+  const overCap = !dry && estimateUsd > REAL_CAP_USD;
 
   const getQuote = async () => {
     setBusy(true);
@@ -122,6 +136,12 @@ export function Trade() {
               </select>
             </label>
             {tokenSource === "seed" && <p className="text-xs text-faint">Token list from cache: the 1Click token API is not reachable right now.</p>}
+            {!dry && (
+              <p className={`text-xs ${overCap ? "text-down" : "text-muted"}`}>
+                Real mode: NEAR tokens only, max ${REAL_CAP_USD} per trade (this one ≈ {usd(estimateUsd)}). Paid from{" "}
+                <span className="num">{session?.payer ?? "your mainnet wallet"}</span>.
+              </p>
+            )}
 
             <div className="flex items-center justify-between rounded-md border border-line bg-ink-850 px-3 py-2">
               <div>
@@ -139,7 +159,7 @@ export function Trade() {
               </button>
             </div>
 
-            <Button variant="primary" className="w-full" onClick={() => void getQuote()} disabled={busy || !amountOk || !origin || !dest}>
+            <Button variant="primary" className="w-full" onClick={() => void getQuote()} disabled={busy || !amountOk || !origin || !dest || overCap}>
               {busy && !quote ? "Requesting quote…" : "Get confidential quote"}
             </Button>
           </>
@@ -148,6 +168,7 @@ export function Trade() {
       </Card>
 
       {quote && <QuoteCard q={quote} />}
+      {quote && !quote.dry && quote.quote.depositAddress && <RealDeposit q={quote} />}
 
       {quote && quote.dry && !filled && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -236,8 +257,21 @@ function QuoteCard({ q }: { q: QuoteResult }) {
 }
 
 function RealModeDialog({ onClose, onConfirm }: { onClose: () => void; onConfirm: () => void }) {
-  const { session } = useSession();
-  const canTradeReal = session?.kind === "wallet";
+  const { session, loginMainnet } = useSession();
+  const [connecting, setConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const linked = Boolean(session?.payer);
+  const connect = async () => {
+    setConnecting(true);
+    setError(null);
+    try {
+      await loginMainnet();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setConnecting(false);
+    }
+  };
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-4 sm:items-center" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-labelledby="real-title" className="w-full max-w-md rounded-lg border border-down/50 bg-ink-900 p-5" onClick={(e) => e.stopPropagation()}>
@@ -245,19 +279,142 @@ function RealModeDialog({ onClose, onConfirm }: { onClose: () => void; onConfirm
           <ShieldAlert size={18} className="text-down" aria-hidden /> Turn off dry run?
         </h2>
         <p className="mt-2 text-sm text-muted">
-          Real mode sends real tokens on NEAR Intents mainnet (there is no testnet for Intents). Use tiny amounts only. The quote returns a
-          deposit address; your wallet sends the tokens and the trade is logged when 1Click reports SUCCESS.
+          Real mode sends real tokens on NEAR Intents mainnet (there is no testnet for Intents). Trades are capped at ${REAL_CAP_USD}. The quote
+          returns a deposit address; your mainnet wallet sends the tokens and the trade is logged when 1Click reports SUCCESS.
         </p>
-        {!canTradeReal && <p className="mt-3 text-sm text-down">Real mode needs a connected wallet. The demo account can only dry run.</p>}
+        {linked ? (
+          <p className="mt-3 text-sm">
+            Mainnet wallet <span className="num text-fg">{session!.payer}</span> → trader <span className="num text-fg">{session!.account}</span>
+          </p>
+        ) : (
+          <div className="mt-3 space-y-2">
+            <p className="text-sm text-muted">Real mode is operator-only: connect the mainnet wallet linked to the real trader on this server.</p>
+            <Button onClick={() => void connect()} disabled={connecting}>
+              <Wallet size={14} aria-hidden /> {connecting ? "Connecting…" : "Connect mainnet wallet"}
+            </Button>
+          </div>
+        )}
+        {error && <p className="mt-2 text-sm text-down">{error}</p>}
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>
             Keep dry run
           </Button>
-          <Button onClick={onConfirm} disabled={!canTradeReal} className="border-down/60 text-down">
+          <Button onClick={onConfirm} disabled={!linked} className="border-down/60 text-down">
             I understand, use real mode
           </Button>
         </div>
       </div>
     </div>
+  );
+}
+
+/** Real mode: send the deposit with the mainnet wallet, then follow 1Click's status until it is final. */
+function RealDeposit({ q }: { q: QuoteResult }) {
+  const { mainnetWallet, session } = useSession();
+  const [confirming, setConfirming] = useState(false);
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [trade, setTrade] = useState<FeedTrade | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!txHash || (trade && TERMINAL.has(trade.status))) return;
+    const timer = setInterval(() => {
+      api.trade(q.tradeId).then((r) => setTrade(r.trade), () => undefined);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [txHash, trade, q.tradeId]);
+
+  const send = async () => {
+    setConfirming(false);
+    setBusy(true);
+    setError(null);
+    try {
+      if (!mainnetWallet) throw new Error("Connect the mainnet wallet first (turn dry run off again).");
+      const hash = await sendDeposit(mainnetWallet, "mainnet", {
+        originAsset: q.origin.assetId,
+        amountIn: q.quote.amountIn,
+        depositAddress: q.quote.depositAddress!,
+      });
+      if (!hash) throw new Error("The wallet did not return a transaction hash.");
+      setTxHash(hash);
+      setTrade((await api.deposit(q.tradeId, hash)).trade);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const status = trade?.status ?? (txHash ? "KNOWN_DEPOSIT_TX" : "PENDING_DEPOSIT");
+  return (
+    <Card className="mt-4 space-y-3 border-down/40 p-4">
+      <h2 className="text-sm font-medium">Real trade on NEAR Intents mainnet</h2>
+      {!txHash && (
+        <Button variant="primary" className="w-full" onClick={() => setConfirming(true)} disabled={busy}>
+          <Send size={14} aria-hidden /> {busy ? "Waiting for wallet…" : `Send ${qty(q.quote.amountInFormatted)} ${q.origin.symbol} with wallet`}
+        </Button>
+      )}
+      {txHash && (
+        <ol className="space-y-1 text-sm">
+          {["KNOWN_DEPOSIT_TX", "PROCESSING", "SUCCESS"].map((s) => {
+            const order = ["PENDING_DEPOSIT", "KNOWN_DEPOSIT_TX", "PROCESSING", "SUCCESS"];
+            const done = order.indexOf(status) >= order.indexOf(s);
+            return (
+              <li key={s} className={`flex items-center gap-2 ${done ? "text-fg" : "text-faint"}`}>
+                <CircleCheck size={14} className={done ? "text-up" : "text-faint"} aria-hidden /> <span className="num">{s}</span>
+              </li>
+            );
+          })}
+          {["REFUNDED", "FAILED", "INCOMPLETE_DEPOSIT"].includes(status) && (
+            <li className="flex items-center gap-2 text-down">
+              <CircleX size={14} aria-hidden /> <span className="num">{status}</span>: 1Click returns the deposit to {session?.payer}.
+            </li>
+          )}
+          <li className="text-xs text-muted">
+            deposit tx{" "}
+            <a className="num text-brass hover:underline" href={explorerTxUrl("mainnet", txHash)} target="_blank" rel="noreferrer">
+              {shortHash(txHash, 8)}
+            </a>
+          </li>
+        </ol>
+      )}
+      {trade?.status === "SUCCESS" && session && (
+        <p className="text-sm">
+          Logged as trade #{trade.seq} {trade.oneClickSigned && "· 1Click-signed ✓"} ·{" "}
+          <Link className="text-brass hover:underline" to={`/trader/${encodeURIComponent(session.account)}`}>
+            View in your trader profile →
+          </Link>
+        </p>
+      )}
+      {error && <ErrorNote>{error}</ErrorNote>}
+
+      {confirming && (
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-4 sm:items-center" onClick={() => setConfirming(false)}>
+          <div role="dialog" aria-modal="true" aria-labelledby="send-title" className="w-full max-w-md rounded-lg border border-down/50 bg-ink-900 p-5" onClick={(e) => e.stopPropagation()}>
+            <h2 id="send-title" className="text-lg font-semibold">Send real funds?</h2>
+            <p className="mt-2 text-sm text-muted">
+              Your wallet <span className="num text-fg">{session?.payer}</span> sends{" "}
+              <span className="num text-fg">
+                {qty(q.quote.amountInFormatted)} {q.origin.symbol} ({usd(q.quote.amountInUsd)})
+              </span>{" "}
+              to the 1Click deposit address <span className="num break-all text-fg">{q.quote.depositAddress}</span> on NEAR mainnet, for about{" "}
+              <span className="num text-fg">
+                {qty(q.quote.amountOutFormatted)} {q.destination.symbol}
+              </span>
+              . Your wallet will show the exact transaction to approve.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setConfirming(false)}>
+                Cancel
+              </Button>
+              <Button onClick={() => void send()} className="border-down/60 text-down">
+                Send with wallet
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </Card>
   );
 }

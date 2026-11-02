@@ -13,6 +13,9 @@ type SessionCtx = {
   loginDemo: () => Promise<void>;
   /** Connect a wallet and log in with a signed NEP-413 message. */
   loginWallet: () => Promise<NearWalletBase>;
+  /** Real mode: connect the linked MAINNET wallet (sends deposits) and log in as its real trader. */
+  loginMainnet: () => Promise<NearWalletBase>;
+  mainnetWallet: NearWalletBase | null;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -24,6 +27,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [metaError, setMetaError] = useState<string | null>(null);
   const [session, setSession] = useState<SessionInfo>(null);
   const [wallet, setWallet] = useState<NearWalletBase | null>(null);
+  const [mainnetWallet, setMainnetWallet] = useState<NearWalletBase | null>(null);
   const network: Network = (meta?.network ?? import.meta.env.VITE_NETWORK ?? "testnet") as Network;
 
   const refresh = useCallback(async () => {
@@ -56,16 +60,28 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return w;
   }, [network]);
 
+  const loginMainnet = useCallback(async () => {
+    const { wallet: w } = await connectWallet("mainnet");
+    const challenge = await api.challenge("mainnet");
+    const signed = await signChallenge(w, challenge);
+    const r = await api.nep413Login(signed);
+    setMainnetWallet(w);
+    setSession({ account: r.account, kind: "wallet", payer: r.payer });
+    return w;
+  }, []);
+
   const logout = useCallback(async () => {
     await api.logout();
     if (wallet) await disconnectWallet(network);
+    if (mainnetWallet) await disconnectWallet("mainnet");
     setWallet(null);
+    setMainnetWallet(null);
     setSession(null);
-  }, [wallet, network]);
+  }, [wallet, mainnetWallet, network]);
 
   const value = useMemo(
-    () => ({ meta, metaError, session, network, wallet, loginDemo, loginWallet, logout, refresh }),
-    [meta, metaError, session, network, wallet, loginDemo, loginWallet, logout, refresh],
+    () => ({ meta, metaError, session, network, wallet, mainnetWallet, loginDemo, loginWallet, loginMainnet, logout, refresh }),
+    [meta, metaError, session, network, wallet, mainnetWallet, loginDemo, loginWallet, loginMainnet, logout, refresh],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
