@@ -1,4 +1,11 @@
-import type { QuoteRequest, QuoteResponse, TokenResponse } from "./types";
+import type {
+  GetExecutionStatusResponse,
+  QuoteRequest,
+  QuoteResponse,
+  SubmitDepositTxRequest,
+  SubmitDepositTxResponse,
+  TokenResponse,
+} from "./types";
 
 export type OneClickClientOptions = {
   baseUrl: string;
@@ -47,6 +54,18 @@ export class OneClickClient {
   /** POST /v0/quote. `dry: true` returns no deposit address and nothing executes. */
   getQuote(req: QuoteRequest): Promise<QuoteResponse> {
     return this.request<QuoteResponse>("POST", "/v0/quote", req);
+  }
+
+  /** POST /v0/deposit/submit — optional, speeds up deposit detection. Add nearSenderAccount for NEAR deposits. */
+  submitDeposit(req: SubmitDepositTxRequest): Promise<SubmitDepositTxResponse> {
+    return this.request<SubmitDepositTxResponse>("POST", "/v0/deposit/submit", req);
+  }
+
+  /** GET /v0/status?depositAddress=...[&depositMemo=...] */
+  getStatus(depositAddress: string, depositMemo?: string): Promise<GetExecutionStatusResponse> {
+    const q = new URLSearchParams({ depositAddress });
+    if (depositMemo) q.set("depositMemo", depositMemo);
+    return this.request<GetExecutionStatusResponse>("GET", `/v0/status?${q}`);
   }
 
   private async request<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<T> {

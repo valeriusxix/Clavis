@@ -6,4 +6,6 @@ export type {
   TokenResponse,
   GetExecutionStatusResponse,
   SwapDetails,
+  SubmitDepositTxRequest,
+  SubmitDepositTxResponse,
 } from "@defuse-protocol/one-click-sdk-typescript";
