@@ -23,3 +23,6 @@ target/
 # third-party agent skills (restore with: npx skills experimental_install — see skills-lock.json)
 .claude/skills/
 .agents/
+
+# local key backups (NEAR credentials) — never commit
+.secrets/
