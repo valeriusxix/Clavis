@@ -202,4 +202,4 @@ MIT, see `LICENSE`.
 
 ## Team
 
-`TODO: name` · X: [@_valeriusx](https://x.com/_valeriusx)
+Solo project by Valerius · X: [@_valeriusx](https://x.com/_valeriusx)
