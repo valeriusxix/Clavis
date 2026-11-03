@@ -25,7 +25,7 @@ No wallet, no funds and no API keys needed. Every step says what to do and what 
 5. **Open the trader `TODO: real trader id`, then click "Buy key" → "Use demo account".**
    → These are **real mainnet confidential trades** (tiny amounts). Each row shows **"1Click-signed ✓"**, meaning the quote was signed by NEAR Intents' 1Click service.
    This demo trader's trades are published in the repo on purpose, so anyone can re-check the 1Click signatures. In normal use, trade feeds stay private until a key is bought.
-   Real mode currently returns each trade's output to the same mainnet account that paid, so these trades are also visible on-chain (see Trust model).
+   Real mode keeps each trade's output in the trader's Confidential Intents balance, so on-chain only the deposits are visible (see Trust model).
 6. **Go to "Trade"**, leave **Dry run ON**, pick NEAR → USDC, enter `1`, click **"Get confidential quote"**.
    → You see a **live quote from the NEAR Intents 1Click API**, requested with `confidentiality: "basic"`, with the amounts in USD and "signed by 1Click". No funds move.
 7. *(Optional)* Click **"Simulate fill"**.
@@ -128,7 +128,7 @@ Fees are included automatically because we use what was actually received. Full 
 ## Trust model (honest version)
 
 - Clavis's server **sees the trades placed through it**, because it relays the quotes. Traders trust the Clavis operator with their trade details.
-- The public chain sees that a trader deposited some amount of token A into 1Click. It does not see what that was swapped into or where it went, **as long as the output is not sent back to the same public account**. If the output lands in the account that paid, anyone looking at that account sees both sides of the trade. **Today, real mode returns the output to the same mainnet account, so the real demo trader's trades are visible on-chain.** Keeping the output in a Confidential Intents balance is pending a dry test with a 1Click partner key.
+- The public chain sees that a trader deposited some amount of token A into 1Click. It does not see what that was swapped into or where it went, **as long as the output is not sent back to the same public account**. If the output lands in the account that paid, anyone looking at that account sees both sides of the trade. **Real mode never does that: it keeps each trade's output in the trader's Confidential Intents balance** (`recipientType: "CONFIDENTIAL_INTENTS"`). 1Click accepted this routing in a dry quote; the first real trades will confirm it. A refund would go back to the paying account, which shows only that the deposit came back.
 - Clavis **cannot make up quote prices**: each real trade carries 1Click's signed quote. The signature proves 1Click quoted those assets and amounts; it does not prove the swap was executed. Execution status comes from the Clavis server, which polls 1Click, and the "signature valid" check in the Verify panel is run by the server.
 - History that is committed can't be changed **silently**. The Clavis server refuses to commit a log whose first N entries don't hash to the head already on-chain. The contract can't check that by itself, and the Verify panel compares with the latest head only, so an operator who changed its own server could rewrite history and commit again. Every earlier head stays visible in the contract's `log_committed` events.
 - A 1Click signature covers the quote's assets, amounts, recipient and timestamp. It does **not** cover the confidentiality setting, so "1Click-signed ✓" alone does not prove a swap was confidential.

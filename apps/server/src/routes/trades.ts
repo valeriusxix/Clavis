@@ -83,13 +83,19 @@ export function registerTradeRoutes(app: FastifyInstance, ctx: Ctx) {
       destinationAsset: dest.assetId,
       amount,
       recipient: body.dry ? (body.recipient ?? DRY_QUOTE_ACCOUNT) : session.payer!,
-      recipientType: "DESTINATION_CHAIN" as QuoteRequest.recipientType,
+      // Real trades keep the output in the trader's Confidential Intents balance instead of sending it
+      // back on-chain to the paying account (AUDIT C4; 1Click accepted this with the partner key in a
+      // dry quote on 2026-11-03, docs/DECISIONS.md).
+      recipientType: (body.dry ? "DESTINATION_CHAIN" : "CONFIDENTIAL_INTENTS") as QuoteRequest.recipientType,
       refundTo: body.dry ? (body.refundTo ?? DRY_QUOTE_ACCOUNT) : session.payer!,
       refundType: "ORIGIN_CHAIN" as QuoteRequest.refundType,
       confidentiality: "basic" as QuoteRequest.confidentiality,
       deadline: new Date(ctx.now() + 10 * 60_000).toISOString(),
       referral: "clavis",
     };
+    if (!body.dry && request.recipientType === "DESTINATION_CHAIN" && request.recipient === session.payer) {
+      throw new ApiError(500, "UNSAFE_ROUTING", "Refusing to send a real trade's output back on-chain to the paying account.");
+    }
 
     let response: QuoteResponse;
     let notice: string | null = null;

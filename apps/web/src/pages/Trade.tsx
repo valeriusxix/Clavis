@@ -248,6 +248,14 @@ function QuoteCard({ q }: { q: QuoteResult }) {
         <dd className="num truncate text-right text-xs text-muted" title={q.correlationId}>
           {shortHash(q.correlationId, 8)}
         </dd>
+        {!q.dry && q.routing && (
+          <>
+            <dt className="text-muted">Output goes to</dt>
+            <dd className="num truncate text-right text-xs" title={q.routing.recipient}>
+              {q.routing.recipientType === "CONFIDENTIAL_INTENTS" ? `Confidential Intents balance of ${q.routing.recipient}` : q.routing.recipient}
+            </dd>
+          </>
+        )}
         {q.quote.depositAddress && (
           <>
             <dt className="text-muted">Deposit address</dt>
@@ -286,7 +294,8 @@ function RealModeDialog({ onClose, onConfirm }: { onClose: () => void; onConfirm
         </h2>
         <p className="mt-2 text-sm text-muted">
           Real mode sends real tokens on NEAR Intents mainnet (there is no testnet for Intents). Trades are capped at ${REAL_CAP_USD}. The quote
-          returns a deposit address; your mainnet wallet sends the tokens and the trade is logged when 1Click reports SUCCESS.
+          returns a deposit address; your mainnet wallet sends the tokens and the trade is logged when 1Click reports SUCCESS. The output
+          stays in your Confidential Intents balance; it is not sent back to your wallet on-chain.
         </p>
         {linked ? (
           <p className="mt-3 text-sm">
@@ -414,7 +423,8 @@ function RealDeposit({ q }: { q: QuoteResult }) {
               <span className="num text-fg">
                 {qty(q.quote.amountOutFormatted)} {q.destination.symbol}
               </span>
-              . Your wallet will show the exact transaction to approve.
+              {q.routing?.recipientType === "CONFIDENTIAL_INTENTS" && ", kept in your Confidential Intents balance (not sent back to your wallet on-chain)"}.
+              Your wallet will show the exact transaction to approve.
             </p>
             {q.routing?.privacyWarning && <p className="mt-2 text-sm text-down">Privacy warning: {q.routing.privacyWarning}</p>}
             <div className="mt-5 flex justify-end gap-2">

@@ -95,9 +95,10 @@ describe("real mode (Phase 4)", () => {
     const id = q.json().tradeId as string;
     expect(repo.getTrade(id)).toMatchObject({ status: "PENDING_DEPOSIT", trader_id: REAL, payer: PAYER, is_simulated: 0 });
 
-    // AUDIT C4: the output goes back on-chain to the account that pays, so the quote must warn.
-    expect(q.json().routing).toMatchObject({ recipient: PAYER, recipientType: "DESTINATION_CHAIN", payer: PAYER });
-    expect(q.json().routing.privacyWarning).toMatch(/same public account/);
+    // AUDIT C4: the output stays in the trader's Confidential Intents balance, never back on-chain to the payer.
+    expect(requests[0]).toMatchObject({ recipientType: "CONFIDENTIAL_INTENTS", recipient: PAYER, refundType: "ORIGIN_CHAIN" });
+    expect(requests.some((r) => r.recipientType === "DESTINATION_CHAIN" && r.recipient === PAYER)).toBe(false);
+    expect(q.json().routing).toMatchObject({ recipient: PAYER, recipientType: "CONFIDENTIAL_INTENTS", payer: PAYER, privacyWarning: null });
 
     const dep = await app.inject({ method: "POST", url: `/api/trades/${id}/deposit`, headers: { cookie }, payload: { txHash: "HASH123" } });
     expect(dep.statusCode).toBe(200);

@@ -402,3 +402,30 @@ AGENT.md section 9 is implemented as written. Where it is silent:
 - **Export.** `pnpm export:real` writes the real trader's settled and terminal trades, plus the
   commit tx, to `apps/server/src/demo/real-trades.json`. That is public quote and status data only.
   Demo mode loads it on boot.
+
+## Real-mode output routing (2026-11-03, AUDIT C4)
+
+Problem: real mode sent the swap output on-chain (`recipientType: "DESTINATION_CHAIN"`) to the same
+mainnet account that made the deposit, so anyone looking at that account saw both sides of every
+trade, and Confidential Intents' deposit/withdrawal unlinkability did not help.
+
+Live probes, dry quotes, 0.5 wNEAR -> USDC (NEAR), `depositType: "ORIGIN_CHAIN"`:
+
+| Credentials | `confidentiality` | `recipientType` | HTTP | Body |
+|---|---|---|---|---|
+| none | `basic` | `CONFIDENTIAL_INTENTS` | 401 | `User authentication is required for confidential intent quotes` |
+| none | omitted (public) | `CONFIDENTIAL_INTENTS` | 401 | same: any Confidential Intents routing needs credentials |
+| partner key (`X-API-Key`) | `basic` | `CONFIDENTIAL_INTENTS` | 201 | signed quote echoing `recipientType: "CONFIDENTIAL_INTENTS"`, `confidentiality: "basic"`; signature valid; correlationId `03f604ed-7832-4ef3-84b0-c7aae9601a10` |
+
+OpenAPI: `CONFIDENTIAL_INTENTS` - "assets are transferred to the `recipient` account inside
+Confidential Intents. On Confidential Intents, 1Click settles swap output via signed transfer
+intent rather than direct token transfer."
+
+Decision (human): real quotes use `recipientType: "CONFIDENTIAL_INTENTS"` with `recipient` = the
+trader's mainnet account, so the output stays in that account's Confidential Intents balance. The
+server refuses any real quote whose output would go on-chain to the paying account. Refunds stay
+`ORIGIN_CHAIN` to the payer (a refund shows only that the deposit came back). Dry quotes keep the
+on-chain recipient `intents.near` (nothing is sent). Not yet confirmed with real funds: the first
+Phase 4 trades must check SUCCESS, the status response's final amounts, and that the output shows
+up in the trader's Confidential Intents balance. Check how to withdraw from that balance before
+trading. Re-test with `pnpm smoke:quote --recipient-type CONFIDENTIAL_INTENTS` (needs the key).
