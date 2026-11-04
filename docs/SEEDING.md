@@ -6,7 +6,7 @@ must first exist as testnet accounts registered with the contract. `pnpm seed:ch
 After that, the running Clavis server commits each trader's hash by itself.
 
 Testnet only: the script refuses to run unless `NETWORK=testnet` and every account ends in
-`.testnet`. It uses free testnet NEAR, about 0.05 NEAR in total.
+`.testnet`. It uses free testnet NEAR, about 0.25 NEAR in total (most of the gas part is refunded to the new accounts).
 
 ## What you need
 

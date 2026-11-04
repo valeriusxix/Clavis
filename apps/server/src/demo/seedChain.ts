@@ -10,6 +10,12 @@ export const REGISTER_STORAGE_BYTES = 400n;
 export const REGISTER_GAS = 30_000_000_000_000n;
 /** register_trader gas plus the transaction's own fees, which the sub-account pays. */
 export const REGISTER_TX_GAS_BUDGET = 35_000_000_000_000n;
+/**
+ * A transaction must be able to pay its attached gas at the protocol's worst-case ("pessimistic") gas
+ * price up front; the unused part is refunded after execution. On testnet (2026-11-04) the node asked
+ * 0.0309 NEAR for 30 Tgas at a 1e8 gas price, i.e. about 10.3x, so budget 12x.
+ */
+export const PESSIMISTIC_GAS_FACTOR = 12n;
 
 export type SeedTarget = { handle: string; accountId: string; priceYocto: string; periodDays: number };
 /** registered: in the contract already; exists: account exists, not registered; missing: no account yet. */
@@ -45,7 +51,7 @@ export function assertTestnetOnly(input: { network: string; contractId: string |
 export function fundingPerAccount(c: Costs) {
   const storage = NEW_ACCOUNT_BYTES * c.storageByteYocto;
   const registerDeposit = REGISTER_STORAGE_BYTES * c.storageByteYocto;
-  const gas = REGISTER_TX_GAS_BUDGET * c.gasPriceYocto;
+  const gas = REGISTER_TX_GAS_BUDGET * c.gasPriceYocto * PESSIMISTIC_GAS_FACTOR;
   return { storage, registerDeposit, gas, total: storage + registerDeposit + gas };
 }
 

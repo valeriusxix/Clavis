@@ -67,8 +67,10 @@ describe("seed:chain planning (AUDIT C3)", () => {
     const f = fundingPerAccount(costs);
     expect(f.storage).toBe(182n * 10n ** 19n); // 0.00182 NEAR
     expect(f.registerDeposit).toBe(400n * 10n ** 19n); // 0.004 NEAR, unused part refunded by the contract
-    expect(f.gas).toBe(35n * 10n ** 12n * 10n ** 8n); // 0.0035 NEAR
-    expect(nearOf(f.total)).toBe("0.00932");
+    // Up-front gas at the worst-case price (12x; the node asked ~10.3x for 30 Tgas), mostly refunded.
+    expect(f.gas).toBe(35n * 10n ** 12n * 10n ** 8n * 12n); // 0.042 NEAR
+    expect(f.total).toBeGreaterThan(34_919_551_871_939_000_000_000n + f.storage); // what the node asked + account storage
+    expect(nearOf(f.total)).toBe("0.04782");
 
     const targets = seedTargets({ parent: "clavis-app.testnet" });
     const chain = new Map([

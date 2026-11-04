@@ -141,6 +141,8 @@ async function main() {
       writeFileSync(keyFile, JSON.stringify({ account_id: s.accountId, public_key: publicKey, private_key: kp.toString() }, null, 2) + "\n", { mode: 0o600 });
       const res = await parentAccount.createSubAccount({ accountOrPrefix: s.accountId, publicKey, nearToTransfer: s.fundYocto });
       console.log(`created ${s.accountId}  key ${maskKey(publicKey)}  tx ${res.transaction_outcome.id}`);
+      // Transactions return at EXECUTED_OPTIMISTIC; wait until the account is final before signing with it.
+      await waitUntil(async () => (await viewAccount(s.accountId)) !== null, `${s.accountId} to exist`);
     } else if (s.fundYocto > 0n) {
       const res = await parentAccount.transfer({ receiverId: s.accountId, amount: s.fundYocto });
       console.log(`topped up ${s.accountId} with ${nearOf(s.fundYocto)} NEAR  tx ${res.transaction_outcome.id}`);
@@ -158,9 +160,14 @@ async function main() {
       gas: REGISTER_GAS,
     });
     const tx = res.transaction_outcome.id;
-    if ((await view<unknown>(contractId!, "get_trader", { trader_id: s.accountId })) === null) {
-      throw new Error(`register_trader for ${s.accountId} did not register it (tx ${tx}). Check ${explorerTx(tx)}`);
-    }
+    const registered = await waitUntil(
+      async () => (await view<unknown>(contractId!, "get_trader", { trader_id: s.accountId })) !== null,
+      `${s.accountId} to be registered`,
+    ).then(
+      () => true,
+      () => false,
+    );
+    if (!registered) throw new Error(`register_trader for ${s.accountId} did not register it (tx ${tx}). Check ${explorerTx(tx)}`);
     registerTxs.set(s.accountId, tx);
     console.log(`registered ${s.accountId}  tx ${tx}`);
   }
@@ -174,6 +181,15 @@ async function main() {
     console.log(`\nIMPORTANT: set SEED_ACCOUNT_VERSION=${version} in .env (and on the hosted server), or the app keeps using the old accounts.`);
   }
   console.log("Next: run the server with CLAVIS_CONTRACT_ID and COMMITTER_* set; it commits each trader's hash within a minute.");
+}
+
+/** Polls `check` every 1.5 s for up to ~20 s (final state lags optimistic execution by a few blocks). */
+async function waitUntil(check: () => Promise<boolean>, what: string): Promise<void> {
+  for (let i = 0; i < 14; i++) {
+    if (await check()) return;
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  throw new Error(`Timed out waiting for ${what}.`);
 }
 
 function loadParentKey(keyFile: string | undefined, fromEnv: string | undefined): KeyPairString {
