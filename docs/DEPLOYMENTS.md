@@ -48,3 +48,26 @@ not one of the seeded demo traders, and its committed head is a test value.
 The real trades are made on NEAR Intents **mainnet** by a separate mainnet dev account owned by the
 human. The server maps that mainnet account to this testnet identity (`REAL_TRADER_MAINNET_ACCOUNT`).
 
+
+## Demo traders on testnet (2026-11-04, `pnpm seed:chain`)
+
+Sub-accounts of `clavis-app.testnet`, registered with the contract. The server's committer then
+committed each trader's hash chain head (`commit_log`, signed by `clavis-committer.testnet`).
+
+| Trader | Registration tx | First commit |
+|---|---|---|
+| `quiet-whale.clavis-app.testnet` | [`7iQ1BkAN…`](https://nearvalidate.org/txns/7iQ1BkANq3gmnmtVxHiFXzLmWVLcC7E6AxXyYgkFuhvt?network=testnet) | [`9tvg62ZL…`](https://nearvalidate.org/txns/9tvg62ZLVJdn2RHyp6ZdBPuvukQRCNWHCHQ2dExs3Bk6?network=testnet) (23 trades) |
+| `zec-maxi.clavis-app.testnet` | [`9LhQQuHE…`](https://nearvalidate.org/txns/9LhQQuHE7CQHrAuuQXfygmygACDYiNwJbt1iDrTQMCm9?network=testnet) | [`4sjWVUJ4…`](https://nearvalidate.org/txns/4sjWVUJ4wnL1FMkMWkNVRNWendNuXmhnoU8Hr2qWyFZp?network=testnet) (31 trades) |
+| `scalp-sensei.clavis-app.testnet` | [`A3mybR7X…`](https://nearvalidate.org/txns/A3mybR7XWChWeDB1L87YRSS7oekXfjRhGmEkUgtpsPKB?network=testnet) | [`4GYMuttq…`](https://nearvalidate.org/txns/4GYMuttqnARZ93Ny7XpvLmy6ow7sftCG4ekgJPK7kAKg?network=testnet) (60 trades) |
+| `degen-dora.clavis-app.testnet` | [`73r8J1G1…`](https://nearvalidate.org/txns/73r8J1G1AzCtu8Nrtnk7eTVrrTqVYFfDSBHU3yG1s47L?network=testnet) | [`6rGEVpEW…`](https://nearvalidate.org/txns/6rGEVpEW4p7nCRKqEHQiAEdbbGndN6BXakBgbzec4FQF?network=testnet) (31 trades) |
+| `steady-eddie.clavis-app.testnet` | [`AxqLu87C…`](https://nearvalidate.org/txns/AxqLu87CYW38spEJQa8YQs9T9C84it6PVHGvMS6FVPqg?network=testnet) | [`EJPLPnQN…`](https://nearvalidate.org/txns/EJPLPnQN1AiQ7SLEXYdGT8Hpd6NTf3HaBsfdyMbMA4zF?network=testnet) (22 trades) |
+
+The seeded history reveals trades until 2026-11-11, so later commits raise these counts.
+
+## Hosted demo (Render)
+
+`render.yaml` describes one free web service: the API server also serves the built website from
+the same address. Create it in Render as a Blueprint from this repository, then enter the two
+secret values Render asks for: `ONECLICK_API_KEY` and `COMMITTER_PRIVATE_KEY`. Everything else is
+in `render.yaml`. The free plan sleeps after 15 minutes without visitors (the next visit takes
+about a minute) and starts with a fresh database each time; demo mode re-creates its data on start.

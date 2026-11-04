@@ -57,7 +57,7 @@ cd contracts/clavis && cargo test   # contract: unit tests + local NEAR sandbox 
 
 > `cargo test` needs Linux or macOS: the sandbox test runs a local NEAR node (`near-sandbox`), which has no Windows build, and the test dependencies compile NASM and OpenSSL code. On Windows, run it inside WSL.
 
-> In local demo mode with no contract configured, step 4 still recomputes the hash chain and marks the on-chain check as "skipped". Set `CLAVIS_CONTRACT_ID` in `.env` to compare against testnet.
+> `.env.example` points at the deployed testnet contract (`clavis-app.testnet`), so step 4 compares with it locally too; reading the contract needs no key. With `CLAVIS_CONTRACT_ID` left empty, step 4 recomputes the hash chain and marks the on-chain check as "skipped".
 >
 > Without `ONECLICK_API_KEY`, step 6 returns a clearly labelled **PUBLIC** dry quote instead: 1Click only serves confidential quotes to requests with a partner key. The hosted demo has a key.
 
@@ -150,7 +150,7 @@ Fees are included automatically because we use what was actually received. Full 
 | Item | Value |
 |---|---|
 | Clavis contract | `clavis-app.testnet` (NEAR **testnet**) |
-| Example commit transaction | `TODO: explorer link` |
+| Example commit transaction | [`9tvg62ZL…`](https://nearvalidate.org/txns/9tvg62ZLVJdn2RHyp6ZdBPuvukQRCNWHCHQ2dExs3Bk6?network=testnet) (`commit_log` for `quiet-whale`, 23 trades) |
 | Trade execution | NEAR Intents **mainnet**. Intents has no testnet, so real trades used ≤ $2 each from a dev account. |
 | Real trader account | `TODO` |
 
