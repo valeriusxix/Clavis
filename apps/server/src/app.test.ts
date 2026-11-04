@@ -348,3 +348,44 @@ describe("hosted-demo hygiene (AUDIT L8)", () => {
     await app.close();
   });
 });
+
+describe("serving the built web app from the same origin (Render)", () => {
+  it("serves files, falls back to index.html for app routes, and keeps /api errors as JSON", async () => {
+    const { mkdtempSync, mkdirSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const dist = mkdtempSync(join(tmpdir(), "clavis-web-"));
+    writeFileSync(join(dist, "index.html"), "<!doctype html><title>Clavis</title>");
+    mkdirSync(join(dist, "assets"));
+    writeFileSync(join(dist, "assets", "app.js"), "console.log(1)");
+    writeFileSync(join(dist, "favicon.svg"), "<svg/>");
+    const repo = new Repo(openDb(":memory:"));
+    await seedDatabase(repo, NOW, "/nonexistent/real-trades.json");
+    const app = await buildApp({
+      config: parseConfig({ DEMO_MODE: "true" }),
+      repo,
+      oneclick: fakeOneClick(false),
+      tokens: new TokenCache({ getTokens: () => Promise.reject(new Error("offline")) }, repo, () => NOW),
+      now: () => NOW,
+      sessionSecret: "test-secret-test-secret-test-secret",
+      webOrigins: [],
+      cookie: { secure: false, sameSite: "lax" },
+      webDist: dist,
+    });
+    for (const url of ["/", "/trader/quiet-whale.clavis-app.testnet", "/how-it-works"]) {
+      const res = await app.inject(url);
+      expect(res.statusCode).toBe(200);
+      expect(res.headers["content-type"]).toMatch(/text\/html/);
+      expect(res.body).toContain("<title>Clavis</title>");
+    }
+    expect((await app.inject("/assets/app.js")).headers["content-type"]).toMatch(/javascript/);
+    expect((await app.inject("/favicon.svg")).statusCode).toBe(200);
+    expect((await app.inject("/api/meta")).json().demoMode).toBe(true);
+    const missing = await app.inject("/api/nope");
+    expect(missing.statusCode).toBe(404);
+    expect(missing.json().error.code).toBe("NOT_FOUND");
+    expect((await app.inject({ method: "POST", url: "/nope" })).statusCode).toBe(404);
+    expect((await app.inject("/assets/missing.js")).statusCode).toBe(404); // a missing file is not the app
+    await app.close();
+  });
+});

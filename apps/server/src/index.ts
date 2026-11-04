@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { existsSync } from "node:fs";
 import { isAbsolute, resolve } from "node:path";
 import { buildApp } from "./app";
 import { makeNearVerifier } from "./auth/nep413";
@@ -20,6 +21,7 @@ const repo = new Repo(openDb(dbPath));
 const oneclick = new OneClickClient({ baseUrl: config.ONECLICK_BASE_URL, apiKey: config.ONECLICK_API_KEY });
 const tokens = new TokenCache(oneclick, repo);
 const production = config.NODE_ENV === "production";
+const WEB_DIST = resolve(REPO_ROOT, "apps/web/dist");
 const rpcUrl = config.NEAR_RPC_URL ?? DEFAULT_RPC[config.NETWORK];
 const mainnetRpcUrl = config.NEAR_MAINNET_RPC_URL ?? DEFAULT_RPC.mainnet;
 const view = config.CLAVIS_CONTRACT_ID ? makeViewFn(rpcUrl) : undefined;
@@ -95,6 +97,8 @@ const app = await buildApp({
   cookie: production ? { secure: true, sameSite: "none" } : { secure: false, sameSite: "lax" },
   logger: true,
   registrations: loadSeedRegistrations(),
+  // In production (one Render service for API + website) serve the built web app from the same origin.
+  webDist: production && existsSync(resolve(WEB_DIST, "index.html")) ? WEB_DIST : undefined,
 });
 
 await app.listen({ port: config.PORT, host: config.HOST });

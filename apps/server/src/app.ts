@@ -1,5 +1,6 @@
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
+import fastifyStatic from "@fastify/static";
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import { ZodError } from "zod";
 import type { ViewFn } from "./chain/nearView";
@@ -38,6 +39,8 @@ export type AppDeps = {
   logger?: boolean;
   /** Seeded trader account -> register_trader tx, from `pnpm seed:chain` (Verify panel link). */
   registrations?: ReadonlyMap<string, string>;
+  /** Built web app (apps/web/dist) to serve from the same origin, e.g. one Render service for both. */
+  webDist?: string;
 };
 
 /** JSON error with a stable code: { error: { code, message } } (AGENT.md 8.3). */
@@ -64,6 +67,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   const app = Fastify({ logger: deps.logger ?? false });
   await app.register(cookie, { secret: deps.sessionSecret });
   await app.register(cors, { origin: deps.webOrigins, credentials: true });
+  if (deps.webDist) await app.register(fastifyStatic, { root: deps.webDist, wildcard: false });
 
   const disclosure: DisclosureAdapter = new ClavisRelayAdapter({
     repo: deps.repo,
@@ -100,9 +104,16 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     app.log.error({ err }, "unhandled error");
     return reply.status(500).send({ error: { code: "INTERNAL", message: "Internal server error" } });
   });
-  app.setNotFoundHandler((req, reply) =>
-    reply.status(404).send({ error: { code: "NOT_FOUND", message: `No route ${req.method} ${req.url}` } }),
-  );
+  app.setNotFoundHandler((req, reply) => {
+    // Client-side routes (/trader/:id, /trade, ...) get the web app; /api and missing files stay 404.
+    const path = req.url.split("?")[0]!;
+    // (Trader ids contain dots, e.g. quiet-whale.clavis-app.testnet, so only real file extensions count as files.)
+    const isFile = /\.(html|js|mjs|css|map|svg|png|jpe?g|gif|webp|ico|json|txt|woff2?)$/i.test(path);
+    if (deps.webDist && req.method === "GET" && !path.startsWith("/api/") && !isFile) {
+      return reply.sendFile("index.html");
+    }
+    return reply.status(404).send({ error: { code: "NOT_FOUND", message: `No route ${req.method} ${req.url}` } });
+  });
 
   registerMetaRoutes(app, ctx);
   registerTraderRoutes(app, ctx);
