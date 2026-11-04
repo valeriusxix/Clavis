@@ -1,0 +1,38 @@
+{
+  "network": "testnet",
+  "contractId": "clavis-app.testnet",
+  "parent": "clavis-app.testnet",
+  "version": null,
+  "traders": [
+    {
+      "handle": "quiet-whale",
+      "accountId": "quiet-whale.clavis-app.testnet",
+      "publicKey": "ed25519:A6XFWnMoYhufGXQ7j5mkK3djynSMBJEnVkSvEjBxAowQ",
+      "registerTx": "7iQ1BkANq3gmnmtVxHiFXzLmWVLcC7E6AxXyYgkFuhvt"
+    },
+    {
+      "handle": "zec-maxi",
+      "accountId": "zec-maxi.clavis-app.testnet",
+      "publicKey": "ed25519:Gmsz9BPvxkHU8N9svNJ625DuFQtzQUaaATxd1XH6dmMS",
+      "registerTx": "9LhQQuHE7CQHrAuuQXfygmygACDYiNwJbt1iDrTQMCm9"
+    },
+    {
+      "handle": "scalp-sensei",
+      "accountId": "scalp-sensei.clavis-app.testnet",
+      "publicKey": "ed25519:GSPNAfVTAsPN1x6QobQkjSrqAYvth9Qh4Gn1EhKim3KE",
+      "registerTx": "A3mybR7XWChWeDB1L87YRSS7oekXfjRhGmEkUgtpsPKB"
+    },
+    {
+      "handle": "degen-dora",
+      "accountId": "degen-dora.clavis-app.testnet",
+      "publicKey": "ed25519:6qC4CksK1JpsUptfM1D56U3p2b3NQLzEtXz4gN3wqfnm",
+      "registerTx": "73r8J1G1AzCtu8Nrtnk7eTVrrTqVYFfDSBHU3yG1s47L"
+    },
+    {
+      "handle": "steady-eddie",
+      "accountId": "steady-eddie.clavis-app.testnet",
+      "publicKey": "ed25519:GXwtRQqK6qtskaBepMDd4aye9KVX6xhR8eNAmMynVMZg",
+      "registerTx": "AxqLu87CYW38spEJQa8YQs9T9C84it6PVHGvMS6FVPqg"
+    }
+  ]
+}
