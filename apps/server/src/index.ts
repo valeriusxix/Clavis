@@ -97,7 +97,7 @@ const app = await buildApp({
   cookie: production ? { secure: true, sameSite: "none" } : { secure: false, sameSite: "lax" },
   logger: true,
   registrations: loadSeedRegistrations(),
-  // In production (one Render service for API + website) serve the built web app from the same origin.
+  // In production (one Railway service for API + website) serve the built web app from the same origin.
   webDist: production && existsSync(resolve(WEB_DIST, "index.html")) ? WEB_DIST : undefined,
 });
 

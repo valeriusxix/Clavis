@@ -349,7 +349,7 @@ describe("hosted-demo hygiene (AUDIT L8)", () => {
   });
 });
 
-describe("serving the built web app from the same origin (Render)", () => {
+describe("serving the built web app from the same origin (one hosted service)", () => {
   it("serves files, falls back to index.html for app routes, and keeps /api errors as JSON", async () => {
     const { mkdtempSync, mkdirSync, writeFileSync } = await import("node:fs");
     const { tmpdir } = await import("node:os");

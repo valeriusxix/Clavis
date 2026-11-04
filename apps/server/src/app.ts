@@ -39,7 +39,7 @@ export type AppDeps = {
   logger?: boolean;
   /** Seeded trader account -> register_trader tx, from `pnpm seed:chain` (Verify panel link). */
   registrations?: ReadonlyMap<string, string>;
-  /** Built web app (apps/web/dist) to serve from the same origin, e.g. one Render service for both. */
+  /** Built web app (apps/web/dist) to serve from the same origin, one hosted service (Railway) for both. */
   webDist?: string;
 };
 

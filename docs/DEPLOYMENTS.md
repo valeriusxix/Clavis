@@ -64,10 +64,30 @@ committed each trader's hash chain head (`commit_log`, signed by `clavis-committ
 
 The seeded history reveals trades until 2026-11-11, so later commits raise these counts.
 
-## Hosted demo (Render)
+## Hosted demo (Railway)
 
-`render.yaml` describes one free web service: the API server also serves the built website from
-the same address. Create it in Render as a Blueprint from this repository, then enter the two
-secret values Render asks for: `ONECLICK_API_KEY` and `COMMITTER_PRIVATE_KEY`. Everything else is
-in `render.yaml`. The free plan sleeps after 15 minutes without visitors (the next visit takes
-about a minute) and starts with a fresh database each time; demo mode re-creates its data on start.
+One Railway service runs the API server, which also serves the built website from the same address
+(`NODE_ENV=production`), so login cookies are first-party. Railway builds the repo with Railpack and
+no config file: it installs with pnpm 10.28.0 (`packageManager`), runs the root `build` script (the
+website) and starts the root `start` script (`node --import tsx apps/server/src/index.ts`). Railway
+provides `PORT` and `NODE_ENV=production`.
+
+Service variables (Raw Editor), values for the two secrets from `.env`:
+
+```
+DEMO_MODE=true
+NETWORK=testnet
+CLAVIS_CONTRACT_ID=clavis-app.testnet
+COMMITTER_ACCOUNT_ID=clavis-committer.testnet
+COMMITTER_PRIVATE_KEY=<from .env>
+ONECLICK_API_KEY=<from .env>
+SESSION_SECRET=<a long random value>
+VITE_NETWORK=testnet
+VITE_CLAVIS_CONTRACT_ID=clavis-app.testnet
+RAILPACK_NO_SPA=1
+```
+
+`VITE_*` values are read when the website is built; `VITE_API_URL` stays unset (same address).
+`RAILPACK_NO_SPA=1` keeps Railpack from deploying only the static website. Measured usage: about
+80-125 MB of memory and under 1% of a CPU core when idle. The filesystem is not persistent, so the
+SQLite database starts fresh on each deploy; demo mode re-creates its data on start.
