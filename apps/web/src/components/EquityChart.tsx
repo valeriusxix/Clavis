@@ -1,18 +1,39 @@
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { date, signedUsd } from "../lib/format";
 
-/** Daily equity (realized + unrealized PnL, USD). */
+const TICK = { fill: "var(--color-faint)", fontSize: 11, fontFamily: "var(--font-mono)" };
+
+/** Axis money: rounded, sign before the dollar (−$926, not $-926), with cents on small accounts so ticks stay distinct. */
+function axisUsd(v: number): string {
+  const sign = v < 0 ? "−" : "";
+  const abs = Math.abs(v);
+  const text = abs >= 1000 ? `${(abs / 1000).toFixed(0)}k` : abs >= 10 || abs === 0 ? abs.toFixed(0) : abs.toFixed(2);
+  return `${sign}$${text}`;
+}
+
+function ChartTip({ active, label, value }: { active?: boolean; label?: string | number; value?: unknown }) {
+  if (!active || value === undefined) return null;
+  return (
+    <div className="rounded-lg border border-line-strong bg-ink-850 px-3 py-2">
+      <div className="text-xs text-muted">{date(Number(label))}</div>
+      <div className="num mt-0.5 text-sm text-fg">{signedUsd(Number(value))}</div>
+    </div>
+  );
+}
+
+/** Daily equity (realized + unrealized PnL, USD). One series, so the card title names it and no legend is needed. */
 export function EquityChart({ points }: { points: { t: number; equityUsd: number }[] }) {
-  if (points.length === 0) return <div className="flex h-48 items-center justify-center text-sm text-muted">No trades yet.</div>;
+  if (points.length === 0) return <div className="flex h-72 items-center justify-center text-sm text-muted">No trades yet.</div>;
   const last = points[points.length - 1]!.equityUsd;
   const stroke = last >= 0 ? "var(--color-up)" : "var(--color-down)";
+  const crossesZero = points.some((p) => p.equityUsd < 0) && points.some((p) => p.equityUsd > 0);
   return (
-    <div className="h-56 w-full" role="img" aria-label={`Equity curve, latest ${signedUsd(last)}`}>
+    <div className="h-72 w-full" role="img" aria-label={`Equity curve, latest ${signedUsd(last)}`}>
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+        <AreaChart data={points} margin={{ top: 8, right: 24, bottom: 0, left: 0 }}>
           <defs>
             <linearGradient id="eq" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={stroke} stopOpacity={0.25} />
+              <stop offset="0%" stopColor={stroke} stopOpacity={0.16} />
               <stop offset="100%" stopColor={stroke} stopOpacity={0} />
             </linearGradient>
           </defs>
@@ -22,25 +43,28 @@ export function EquityChart({ points }: { points: { t: number; equityUsd: number
             type="number"
             domain={["dataMin", "dataMax"]}
             tickFormatter={(t: number) => new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-            stroke="var(--color-faint)"
-            fontSize={11}
+            stroke="var(--color-line-strong)"
+            tick={TICK}
             tickLine={false}
-            minTickGap={40}
+            minTickGap={48}
           />
-          <YAxis
-            width={64}
-            stroke="var(--color-faint)"
-            fontSize={11}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(v: number) => `$${Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toFixed(0)}`}
-          />
+          <YAxis width={64} tick={TICK} tickLine={false} axisLine={false} tickFormatter={axisUsd} />
+          {crossesZero && <ReferenceLine y={0} stroke="var(--color-line-strong)" />}
           <Tooltip
-            contentStyle={{ background: "var(--color-ink-850)", border: "1px solid var(--color-line-strong)", borderRadius: 6, fontSize: 12 }}
-            labelFormatter={(t) => date(Number(t))}
-            formatter={(v) => [signedUsd(Number(v)), "PnL"]}
+            cursor={{ stroke: "var(--color-line-strong)", strokeWidth: 1 }}
+            content={(p) => <ChartTip active={p.active} label={p.label} value={p.payload?.[0]?.value} />}
           />
-          <Area type="monotone" dataKey="equityUsd" stroke={stroke} strokeWidth={1.75} fill="url(#eq)" isAnimationActive={false} />
+          <Area
+            type="monotone"
+            dataKey="equityUsd"
+            stroke={stroke}
+            strokeWidth={2}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            fill="url(#eq)"
+            activeDot={{ r: 4, fill: stroke, stroke: "var(--color-ink-900)", strokeWidth: 2 }}
+            isAnimationActive={false}
+          />
         </AreaChart>
       </ResponsiveContainer>
     </div>

@@ -4,11 +4,16 @@ import { useCallback, useEffect, useState } from "react";
 import { api, type TraderLog } from "../lib/api";
 import { shortHash } from "../lib/format";
 import { explorerAccountUrl, explorerTxUrl, getCommitment, type Network } from "../lib/near";
+import { FitTest } from "./Key";
 import { Button } from "./ui";
 
 type State = "ok" | "fail" | "skip";
 type Step = { state: State; title: string; detail?: React.ReactNode };
-type Result = { steps: Step[]; verdict: "green" | "red" | "neutral" };
+/** The two hashes the on-chain step compared. Null when that step did not compare anything. */
+type Fit = { lockHash: string; keyHash: string; fits: boolean; count: number };
+type Result = { steps: Step[]; verdict: "green" | "red" | "neutral"; fit: Fit | null };
+
+const LINK = "inline-flex items-center gap-1 text-green hover:underline";
 
 /** The contract this build verifies against. When set, the server can't point verification elsewhere. */
 const PINNED_CONTRACT: string | undefined = import.meta.env.VITE_CLAVIS_CONTRACT_ID;
@@ -55,6 +60,7 @@ async function verify(log: TraderLog, entries: LogEntry[], network: Network): Pr
 
   // 3. compare with the commitment stored in the NEAR contract (pinned in the build when set, AUDIT H3)
   const { contractId, mismatch } = verificationContract(PINNED_CONTRACT, log.contractId);
+  let fit: Fit | null = null;
   if (mismatch) {
     steps.push({ state: "fail", title: "The server points verification at a different contract.", detail: mismatch });
   } else if (!contractId) {
@@ -71,10 +77,14 @@ async function verify(log: TraderLog, entries: LogEntry[], network: Network): Pr
       } else {
         const count = Number(c.trade_count);
         const contractLink = (
-          <a className="inline-flex items-center gap-1 text-brass hover:underline" href={explorerAccountUrl(network, contractId)} target="_blank" rel="noreferrer">
+          <a className={LINK} href={explorerAccountUrl(network, contractId)} target="_blank" rel="noreferrer">
             {contractId} <ExternalLink size={11} aria-hidden />
           </a>
         );
+        // Compare like with like: the contract's head against the browser's hash of the same entries.
+        if (count > 0 && count <= n) {
+          fit = { lockHash: c.head_hash, keyHash: hashes[count]!, fits: hashes[count] === c.head_hash, count };
+        }
         if (count > n) {
           steps.push({
             state: "fail",
@@ -106,7 +116,7 @@ async function verify(log: TraderLog, entries: LogEntry[], network: Network): Pr
                 {log.committed?.tx && (
                   <>
                     {" · "}
-                    <a className="inline-flex items-center gap-1 text-brass hover:underline" href={explorerTxUrl(network, log.committed.tx)} target="_blank" rel="noreferrer">
+                    <a className={LINK} href={explorerTxUrl(network, log.committed.tx)} target="_blank" rel="noreferrer">
                       commit transaction <ExternalLink size={11} aria-hidden />
                     </a>
                   </>
@@ -114,7 +124,7 @@ async function verify(log: TraderLog, entries: LogEntry[], network: Network): Pr
                 {log.registrationTx && (
                   <>
                     {" · "}
-                    <a className="inline-flex items-center gap-1 text-brass hover:underline" href={explorerTxUrl(network, log.registrationTx)} target="_blank" rel="noreferrer">
+                    <a className={LINK} href={explorerTxUrl(network, log.registrationTx)} target="_blank" rel="noreferrer">
                       registration transaction <ExternalLink size={11} aria-hidden />
                     </a>
                   </>
@@ -148,7 +158,7 @@ async function verify(log: TraderLog, entries: LogEntry[], network: Network): Pr
 
   const failed = steps.some((s) => s.state === "fail");
   const onChainOk = steps[2]?.state === "ok";
-  return { steps, verdict: failed ? "red" : onChainOk ? "green" : "neutral" };
+  return { steps, verdict: failed ? "red" : onChainOk ? "green" : "neutral", fit };
 }
 
 export function VerifyPanel({ traderId, network }: { traderId: string; network: Network }) {
@@ -189,13 +199,13 @@ export function VerifyPanel({ traderId, network }: { traderId: string; network: 
 
   const frame =
     result?.verdict === "green"
-      ? "border-up/50 bg-up/5"
+      ? "border-up/50 bg-[color-mix(in_srgb,var(--color-up)_6%,var(--color-ink-900))]"
       : result?.verdict === "red"
-        ? "border-down/60 bg-down/5"
+        ? "border-down/60 bg-[color-mix(in_srgb,var(--color-down)_7%,var(--color-ink-900))]"
         : "border-line-strong bg-ink-900";
 
   return (
-    <section aria-live="polite" className={`rounded-lg border p-4 ${frame}`}>
+    <section aria-live="polite" className={`rounded-2xl border p-5 sm:p-6 ${frame}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-medium">
           {busy && !result
@@ -217,8 +227,21 @@ export function VerifyPanel({ traderId, network }: { traderId: string; network: 
         </div>
       </div>
       {error && <p className="mt-2 text-sm text-down">{error}</p>}
+      {result?.fit && (
+        <figure className="mt-4">
+          <FitTest lockHash={result.fit.lockHash} keyHash={result.fit.keyHash} fits={result.fit.fits} />
+          <figcaption className="mt-2 flex flex-wrap justify-between gap-x-6 gap-y-1 text-xs text-faint">
+            <span>
+              Lock: head stored in the contract <span className="num text-muted">{shortHash(result.fit.lockHash, 8)}</span>
+            </span>
+            <span>
+              Key: your browser's hash of the first {result.fit.count} entries <span className="num text-muted">{shortHash(result.fit.keyHash, 8)}</span>
+            </span>
+          </figcaption>
+        </figure>
+      )}
       {result && (
-        <ol className="mt-3 space-y-2">
+        <ol className="mt-4 space-y-2">
           {result.steps.map((s, i) => (
             <li key={i} className="flex gap-2 text-sm">
               {s.state === "ok" ? (

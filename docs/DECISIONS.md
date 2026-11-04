@@ -356,7 +356,7 @@ AGENT.md section 9 is implemented as written. Where it is silent:
   - A note that local runs without `ONECLICK_API_KEY` get a PUBLIC quote.
   - A Tamper test sentence.
   - The honest signature-coverage line in the trust model.
-- **Design:** dark ink background, one accent (brass), green and red only as PnL data colors,
+- **Design:** black background, green as the only brand colour (deep green for fills, bright green for signals and gains), red only for losses, failed checks and real money,
   monospace for numbers and hashes, Lucide icons, blurred locked rows with a lock. Tested at
   1280 px and 375 px (no horizontal overflow).
 - **Seed realism fix:** simulated fills now lose the 0.2% fee in USD, like real swaps. The calibrated

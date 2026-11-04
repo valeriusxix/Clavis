@@ -154,7 +154,7 @@ Fees are included automatically because we use what was actually received. Full 
 | Trade execution | NEAR Intents **mainnet**. Intents has no testnet, so real trades used ≤ $2 each from a dev account. |
 | Real trader account | `TODO` |
 
-Simulated traders are labeled **SIMULATED** everywhere they appear. Each has a deterministic, seeded 45-day history and a testnet account id under the contract (for example `quiet-whale.clavis-app.testnet`). Their log hashes are on-chain only once those accounts are registered with the contract; "Trades committed" on each card shows how many trades the on-chain hash covers.
+Simulated traders are labeled **SIMULATED** everywhere they appear. Each has a deterministic, seeded 45-day history and a testnet account id under the contract (for example `quiet-whale.clavis-app.testnet`). Their log hashes are on-chain only once those accounts are registered with the contract; "Trades committed" on each row shows how many trades the on-chain hash covers.
 
 ## Project structure
 
@@ -192,13 +192,13 @@ Copy `.env.example` to `.env`. Everything is optional in demo mode.
 
 ## Built with
 
-NEAR Intents 1Click Swap API (`@defuse-protocol/one-click-sdk-typescript` for types and quote-signature verification) · Confidential Intents · NEAR smart contracts (Rust, `near-sdk` 5.29, `cargo-near`) · NEAR Connect (`@hot-labs/near-connect`) · `near-api-js` (NEP-413 verification) · React 19, Vite, Tailwind CSS 4, Recharts, React Router, Lucide icons · Node, Fastify (`@fastify/cookie`, `@fastify/cors`), zod, SQLite (`better-sqlite3`) · TypeScript, `tsx`, vitest · contract tests: `near-sandbox`, `near-api`, `cargo-near-build`, `tokio`, `testresult`.
+NEAR Intents 1Click Swap API (`@defuse-protocol/one-click-sdk-typescript` for types and quote-signature verification) · Confidential Intents · NEAR smart contracts (Rust, `near-sdk` 5.29, `cargo-near`) · NEAR Connect (`@hot-labs/near-connect`) · `near-api-js` (NEP-413 verification) · React 19, Vite, Tailwind CSS 4, Recharts, React Router, Lucide icons, DotGrid from React Bits, IBM Plex and Newsreader fonts via Fontsource · Node, Fastify (`@fastify/cookie`, `@fastify/cors`), zod, SQLite (`better-sqlite3`) · TypeScript, `tsx`, vitest · contract tests: `near-sandbox`, `near-api`, `cargo-near-build`, `tokio`, `testresult`.
 
 AI coding assistants were used during development.
 
 ## License
 
-MIT, see `LICENSE`.
+MIT, see `LICENSE`. One exception: `apps/web/src/components/DotGrid.jsx` and `DotGrid.css` come from [React Bits](https://reactbits.dev) and are under MIT + Commons Clause, see `DotGrid.LICENSE.md`.
 
 ## Team
 

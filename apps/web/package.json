@@ -11,6 +11,9 @@
   },
   "dependencies": {
     "@clavis/shared": "workspace:*",
+    "@fontsource-variable/ibm-plex-sans": "^5.3.0",
+    "@fontsource-variable/newsreader": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
     "@hot-labs/near-connect": "0.12.0",
     "lucide-react": "^1.66.0",
     "react": "^19.3.1",
