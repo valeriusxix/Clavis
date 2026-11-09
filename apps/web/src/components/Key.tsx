@@ -173,13 +173,3 @@ export function FitTest({ lockHash, keyHash, fits }: { lockHash: string; keyHash
     </svg>
   );
 }
-
-/** The logo: a flat key glyph, in the colour of the text around it. */
-export function LogoMark({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="square" aria-hidden className={className}>
-      <circle cx="8" cy="12" r="5" />
-      <path d="M13 12h9.5M18 12v3.5M22 12v3.5" />
-    </svg>
-  );
-}
