@@ -4,7 +4,6 @@ import { NavLink, Outlet } from "react-router";
 import { explorerAccountUrl } from "../lib/near";
 import { useSession } from "../lib/session";
 import DotGrid from "./DotGrid";
-import { LogoMark } from "./Key";
 import { Button } from "./ui";
 
 const NAV = [
@@ -43,7 +42,7 @@ export function Layout() {
       <header className="sticky top-0 z-20 border-b border-line bg-ink-950">
         <div className="page flex flex-wrap items-center gap-x-8">
           <NavLink to="/" className="flex h-16 items-center gap-2 font-serif text-2xl leading-none">
-            <LogoMark className="size-6 text-green" />
+            <img src="/logo.png" alt="" aria-hidden width={28} height={28} className="size-7" />
             Clavis
           </NavLink>
 
