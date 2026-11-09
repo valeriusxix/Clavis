@@ -101,4 +101,19 @@ const app = await buildApp({
   webDist: production && existsSync(resolve(WEB_DIST, "index.html")) ? WEB_DIST : undefined,
 });
 
-await app.listen({ port: config.PORT, host: config.HOST });
+try {
+  await app.listen({ port: config.PORT, host: config.HOST });
+} catch (err) {
+  // Usually an older `npm run dev` still running (Ctrl+C on Windows can leave the server behind).
+  if ((err as NodeJS.ErrnoException).code === "EADDRINUSE") {
+    console.error(
+      `\n[clavis] Port ${config.PORT} is already in use, most likely by an earlier server that is still running.\n` +
+        `[clavis] Stop it, then run the command again. On Windows:\n` +
+        `[clavis]   netstat -ano | findstr :${config.PORT}     (the last number on the LISTENING line is the PID)\n` +
+        `[clavis]   taskkill /PID <that number> /F\n` +
+        `[clavis] Or set PORT to a different number in .env.\n`,
+    );
+    process.exit(1);
+  }
+  throw err;
+}
