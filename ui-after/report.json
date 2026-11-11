@@ -1,0 +1,677 @@
+{
+  "consoleErrors": [],
+  "overflow": {
+    "m375-leaderboard": {
+      "overflow": 0,
+      "wide": []
+    },
+    "m375-trader-locked": {
+      "overflow": 0,
+      "wide": []
+    },
+    "m375-real-trader-locked": {
+      "overflow": 0,
+      "wide": []
+    },
+    "m375-trade": {
+      "overflow": 0,
+      "wide": []
+    },
+    "m375-keys": {
+      "overflow": 0,
+      "wide": []
+    },
+    "m375-how": {
+      "overflow": 0,
+      "wide": []
+    },
+    "t768-leaderboard": {
+      "overflow": 0,
+      "wide": []
+    },
+    "t768-trader-locked": {
+      "overflow": 0,
+      "wide": []
+    },
+    "t768-real-trader-locked": {
+      "overflow": 0,
+      "wide": []
+    },
+    "t768-trade": {
+      "overflow": 0,
+      "wide": []
+    },
+    "t768-keys": {
+      "overflow": 0,
+      "wide": []
+    },
+    "t768-how": {
+      "overflow": 0,
+      "wide": []
+    },
+    "d1440-leaderboard": {
+      "overflow": 0,
+      "wide": []
+    },
+    "d1440-trader-locked": {
+      "overflow": 0,
+      "wide": []
+    },
+    "d1440-real-trader-locked": {
+      "overflow": 0,
+      "wide": []
+    },
+    "d1440-trade": {
+      "overflow": 0,
+      "wide": []
+    },
+    "d1440-keys": {
+      "overflow": 0,
+      "wide": []
+    },
+    "d1440-how": {
+      "overflow": 0,
+      "wide": []
+    },
+    "d1440-trader-unlocked": {
+      "overflow": 0,
+      "wide": []
+    },
+    "d1440-trade-quote": {
+      "overflow": 0,
+      "wide": []
+    },
+    "d1440-keys-loggedin": {
+      "overflow": 0,
+      "wide": []
+    },
+    "m375-trader-unlocked": {
+      "overflow": 0,
+      "wide": []
+    },
+    "m375-trade-quote": {
+      "overflow": 0,
+      "wide": []
+    },
+    "m375-keys-loggedin": {
+      "overflow": 0,
+      "wide": []
+    }
+  },
+  "tapTargets": {
+    "m375-leaderboard": {
+      "total": 14,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 44,
+          "visible": true
+        }
+      ]
+    },
+    "m375-trader-locked": {
+      "total": 10,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 44,
+          "visible": true
+        }
+      ]
+    },
+    "m375-real-trader-locked": {
+      "total": 10,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 44,
+          "visible": true
+        }
+      ]
+    },
+    "m375-trade": {
+      "total": 12,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 44,
+          "visible": true
+        }
+      ]
+    },
+    "m375-keys": {
+      "total": 8,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 44,
+          "visible": true
+        }
+      ]
+    },
+    "m375-how": {
+      "total": 7,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 44,
+          "visible": true
+        }
+      ]
+    },
+    "t768-leaderboard": {
+      "total": 14,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 64,
+          "visible": true
+        }
+      ]
+    },
+    "t768-trader-locked": {
+      "total": 10,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 64,
+          "visible": true
+        }
+      ]
+    },
+    "t768-real-trader-locked": {
+      "total": 10,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 64,
+          "visible": true
+        }
+      ]
+    },
+    "t768-trade": {
+      "total": 12,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 64,
+          "visible": true
+        }
+      ]
+    },
+    "t768-keys": {
+      "total": 8,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 64,
+          "visible": true
+        }
+      ]
+    },
+    "t768-how": {
+      "total": 7,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 64,
+          "visible": true
+        }
+      ]
+    },
+    "d1440-leaderboard": {
+      "total": 14,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 64,
+          "visible": true
+        },
+        {
+          "tag": "button",
+          "text": "Connect wallet",
+          "w": 146,
+          "h": 36,
+          "visible": true
+        },
+        {
+          "tag": "a",
+          "text": "This key opens 28 sealed trades for 5 NE",
+          "w": 254,
+          "h": 16,
+          "visible": true
+        }
+      ]
+    },
+    "d1440-trader-locked": {
+      "total": 10,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 64,
+          "visible": true
+        },
+        {
+          "tag": "button",
+          "text": "Connect wallet",
+          "w": 146,
+          "h": 36,
+          "visible": true
+        },
+        {
+          "tag": "button",
+          "text": "Buy key",
+          "w": 108,
+          "h": 40,
+          "visible": true
+        }
+      ]
+    },
+    "d1440-real-trader-locked": {
+      "total": 10,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 64,
+          "visible": true
+        },
+        {
+          "tag": "button",
+          "text": "Connect wallet",
+          "w": 146,
+          "h": 36,
+          "visible": true
+        },
+        {
+          "tag": "button",
+          "text": "Buy key",
+          "w": 108,
+          "h": 40,
+          "visible": true
+        }
+      ]
+    },
+    "d1440-trade": {
+      "total": 12,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 64,
+          "visible": true
+        },
+        {
+          "tag": "button",
+          "text": "Connect wallet",
+          "w": 146,
+          "h": 36,
+          "visible": true
+        }
+      ]
+    },
+    "d1440-keys": {
+      "total": 8,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 64,
+          "visible": true
+        },
+        {
+          "tag": "button",
+          "text": "Connect wallet",
+          "w": 146,
+          "h": 36,
+          "visible": true
+        },
+        {
+          "tag": "button",
+          "text": "Use demo account",
+          "w": 152,
+          "h": 40,
+          "visible": true
+        }
+      ]
+    },
+    "d1440-how": {
+      "total": 7,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 64,
+          "visible": true
+        },
+        {
+          "tag": "button",
+          "text": "Connect wallet",
+          "w": 146,
+          "h": 36,
+          "visible": true
+        }
+      ]
+    },
+    "d1440-trader-unlocked": {
+      "total": 11,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 64,
+          "visible": true
+        },
+        {
+          "tag": "button",
+          "text": "Log out",
+          "w": 44,
+          "h": 36,
+          "visible": true
+        },
+        {
+          "tag": "a",
+          "text": "My Keys",
+          "w": 52,
+          "h": 18,
+          "visible": true
+        },
+        {
+          "tag": "button",
+          "text": "Verify log",
+          "w": 108,
+          "h": 36,
+          "visible": true
+        }
+      ]
+    },
+    "d1440-trade-quote": {
+      "total": 14,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 64,
+          "visible": true
+        },
+        {
+          "tag": "button",
+          "text": "Log out",
+          "w": 44,
+          "h": 36,
+          "visible": true
+        },
+        {
+          "tag": "button",
+          "text": "Simulate fill",
+          "w": 135,
+          "h": 40,
+          "visible": true
+        }
+      ]
+    },
+    "d1440-keys-loggedin": {
+      "total": 10,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 64,
+          "visible": true
+        },
+        {
+          "tag": "button",
+          "text": "Log out",
+          "w": 44,
+          "h": 36,
+          "visible": true
+        }
+      ]
+    },
+    "m375-trader-unlocked": {
+      "total": 11,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 44,
+          "visible": true
+        },
+        {
+          "tag": "a",
+          "text": "My Keys",
+          "w": 52,
+          "h": 18,
+          "visible": true
+        }
+      ]
+    },
+    "m375-trade-quote": {
+      "total": 14,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 44,
+          "visible": true
+        }
+      ]
+    },
+    "m375-keys-loggedin": {
+      "total": 10,
+      "small": [
+        {
+          "tag": "a",
+          "text": "Trade",
+          "w": 36,
+          "h": 44,
+          "visible": true
+        }
+      ]
+    }
+  },
+  "focus": [
+    {
+      "tag": "a",
+      "text": "Clavis",
+      "outline": "solid 2px rgb(55, 214, 122)",
+      "offset": "2px",
+      "box": "96x64"
+    },
+    {
+      "tag": "a",
+      "text": "Leaderboard",
+      "outline": "solid 2px rgb(55, 214, 122)",
+      "offset": "2px",
+      "box": "80x64"
+    },
+    {
+      "tag": "a",
+      "text": "Trade",
+      "outline": "solid 2px rgb(55, 214, 122)",
+      "offset": "2px",
+      "box": "36x64"
+    },
+    {
+      "tag": "a",
+      "text": "My Keys",
+      "outline": "solid 2px rgb(55, 214, 122)",
+      "offset": "2px",
+      "box": "52x64"
+    },
+    {
+      "tag": "a",
+      "text": "How it works",
+      "outline": "solid 2px rgb(55, 214, 122)",
+      "offset": "2px",
+      "box": "81x64"
+    },
+    {
+      "tag": "button",
+      "text": "Connect wallet",
+      "outline": "solid 2px rgb(55, 214, 122)",
+      "offset": "2px",
+      "box": "146x36"
+    },
+    {
+      "tag": "a",
+      "text": "This key opens 28 sealed trades for 5 NE",
+      "outline": "solid 2px rgb(55, 214, 122)",
+      "offset": "2px",
+      "box": "254x16"
+    },
+    {
+      "tag": "a",
+      "text": "quiet-whale: 30-day PnL +22.2%",
+      "outline": "solid 2px rgb(55, 214, 122)",
+      "offset": "-2px",
+      "box": "1198x72"
+    },
+    {
+      "tag": "a",
+      "text": "zec-maxi: 30-day PnL +16.5%",
+      "outline": "solid 2px rgb(55, 214, 122)",
+      "offset": "-2px",
+      "box": "1198x72"
+    }
+  ],
+  "notes": [
+    "d1440: leaderboard rows = 7",
+    "d1440: verify title = Verified: this log matches its on-chain commitment",
+    "m375: leaderboard rows = 7",
+    "m375: verify title = Verified: this log matches its on-chain commitment",
+    "keyboard: after opening Buy key dialog, focus={\"active\":\"dialog\",\"inDialog\":true}",
+    "keyboard: first Tab inside dialog -> {\"text\":\"\",\"inDialog\":true}",
+    "keyboard: after Escape focus returns to \"Buy key\"",
+    "reduced-motion: {\"riseAnimation\":\"none\",\"canvasPresent\":true,\"spinnerAnim\":\"n/a\"}"
+  ],
+  "network": {
+    "m375": {
+      "requests": 43,
+      "byType": {
+        "document": {
+          "n": 1,
+          "bytes": 832
+        },
+        "script": {
+          "n": 32,
+          "bytes": 11703847
+        },
+        "image": {
+          "n": 1,
+          "bytes": 4121
+        },
+        "font": {
+          "n": 3,
+          "bytes": 192420
+        },
+        "fetch": {
+          "n": 6,
+          "bytes": 7260
+        }
+      },
+      "fonts": [
+        "newsreader-latin-opsz-normal.woff2 132000",
+        "ibm-plex-sans-latin-wght-normal.woff2 45712",
+        "ibm-plex-mono-latin-400-normal.woff2 14708"
+      ]
+    },
+    "t768": {
+      "requests": 43,
+      "byType": {
+        "document": {
+          "n": 1,
+          "bytes": 832
+        },
+        "script": {
+          "n": 32,
+          "bytes": 11703847
+        },
+        "image": {
+          "n": 1,
+          "bytes": 4121
+        },
+        "font": {
+          "n": 3,
+          "bytes": 192420
+        },
+        "fetch": {
+          "n": 6,
+          "bytes": 7260
+        }
+      },
+      "fonts": [
+        "newsreader-latin-opsz-normal.woff2 132000",
+        "ibm-plex-sans-latin-wght-normal.woff2 45712",
+        "ibm-plex-mono-latin-400-normal.woff2 14708"
+      ]
+    },
+    "d1440": {
+      "requests": 43,
+      "byType": {
+        "document": {
+          "n": 1,
+          "bytes": 832
+        },
+        "script": {
+          "n": 32,
+          "bytes": 11703847
+        },
+        "image": {
+          "n": 1,
+          "bytes": 4121
+        },
+        "font": {
+          "n": 3,
+          "bytes": 192420
+        },
+        "fetch": {
+          "n": 6,
+          "bytes": 7260
+        }
+      },
+      "fonts": [
+        "newsreader-latin-opsz-normal.woff2 132000",
+        "ibm-plex-sans-latin-wght-normal.woff2 45712",
+        "ibm-plex-mono-latin-400-normal.woff2 14708"
+      ]
+    }
+  }
+}
