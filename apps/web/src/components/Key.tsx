@@ -49,7 +49,7 @@ function useCuts(hash: string | null | undefined): number[] {
     }
     const start = performance.now();
     let frame = requestAnimationFrame(function tick(now) {
-      const t = Math.min(1, (now - start) / 320);
+      const t = Math.min(1, (now - start) / 240);
       const eased = 1 - (1 - t) ** 3;
       shown.current = target.map((cut, i) => from[i]! + (cut - from[i]!) * eased);
       setCuts(shown.current);

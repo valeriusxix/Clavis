@@ -62,7 +62,7 @@
 /* Fill-mode backwards, not both: a filled transform would keep a containing block on the page root
    and trap the fixed dialogs inside it. */
 @utility rise {
-  animation: rise 400ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation: rise 240ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 @keyframes rise {
