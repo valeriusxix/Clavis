@@ -1,4 +1,4 @@
-import { ArrowLeft, KeyRound, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ChevronRight, KeyRound, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { SimulatedBadge } from "../components/Badge";
@@ -142,10 +142,28 @@ export function Trader() {
             <Card className="overflow-hidden">
               <TradeHeader />
               <ul>
-                {feed.map((tr) => (
-                  <TradeRow key={tr.id} t={tr} />
-                ))}
+                {feed
+                  .filter((tr) => tr.seq !== null)
+                  .map((tr) => (
+                    <TradeRow key={tr.id} t={tr} />
+                  ))}
               </ul>
+              {/* Quotes without a settled trade have no entry number and are not in the hash chain: folded, not hidden. */}
+              {feed.some((tr) => tr.seq === null) && (
+                <details className="group border-t border-line">
+                  <summary className="flex min-h-11 cursor-pointer items-center gap-2 px-4 text-sm text-muted transition-colors hover:text-fg sm:px-6">
+                    <ChevronRight size={14} strokeWidth={1.5} className="shrink-0 transition-transform duration-150 group-open:rotate-90" aria-hidden />
+                    <span className="num">{feed.filter((tr) => tr.seq === null).length}</span> quotes without a settled trade (not in the log)
+                  </summary>
+                  <ul className="border-t border-line">
+                    {feed
+                      .filter((tr) => tr.seq === null)
+                      .map((tr) => (
+                        <TradeRow key={tr.id} t={tr} />
+                      ))}
+                  </ul>
+                </details>
+              )}
             </Card>
           )
         ) : (
