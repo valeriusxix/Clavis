@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import type { ReactNode } from "react";
 import type { FeedTrade } from "../lib/api";
 import { dateTime, qty, usd } from "../lib/format";
 import { SignedBadge, SimulatedBadge, StatusBadge } from "./Badge";
@@ -22,7 +23,8 @@ export function TradeHeader() {
   );
 }
 
-export function TradeRow({ t }: { t: FeedTrade }) {
+/** `action` renders at the end of the status cell, e.g. a Copy link on rows that can be copied. */
+export function TradeRow({ t, action }: { t: FeedTrade; action?: ReactNode }) {
   return (
     <li className={`flex flex-col gap-1.5 border-b border-line px-4 py-3 last:border-0 sm:px-6 lg:min-h-12 lg:py-2 ${TRADE_COLUMNS}`}>
       <div className="num flex items-center gap-2 text-xs lg:contents">
@@ -48,6 +50,7 @@ export function TradeRow({ t }: { t: FeedTrade }) {
       <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
         {t.simulated ? <SimulatedBadge /> : <StatusBadge status={t.status} />}
         {!t.simulated && t.oneClickSigned && <SignedBadge />}
+        {action}
       </div>
     </li>
   );

@@ -31,7 +31,7 @@ export function Leaderboard() {
           </h1>
           <p className="mt-4 max-w-md text-base leading-6 text-muted">
             Every trader's PnL is hash-committed on NEAR and checkable in your browser. Their trades, made through NEAR Confidential Intents,
-            stay sealed until you buy a key and follow them.
+            stay sealed until you buy a key to see and copy them.
           </p>
         </div>
         <div className="mx-auto w-full max-w-xl lg:mr-0">

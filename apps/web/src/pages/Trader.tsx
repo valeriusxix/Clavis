@@ -1,4 +1,4 @@
-import { ArrowLeft, ChevronRight, KeyRound, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ChevronRight, Copy as CopyIcon, KeyRound, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { SimulatedBadge } from "../components/Badge";
@@ -9,7 +9,7 @@ import { LockedFeed } from "../components/LockedFeed";
 import { TradeHeader, TradeRow } from "../components/TradeRow";
 import { VerifyPanel } from "../components/VerifyPanel";
 import { Bone, Button, Card, ErrorNote, Notice, Spinner } from "../components/ui";
-import { api, type FeedTrade, type TraderStats } from "../lib/api";
+import { api, type FeedTrade, type Token, type TraderStats } from "../lib/api";
 import { date, pct, shortHash, signedUsd, tone, usd } from "../lib/format";
 import { useSession } from "../lib/session";
 
@@ -38,6 +38,35 @@ export function Trader() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Copy needs asset ids for the trade's two tokens. Only NEAR-chain tokens can be quoted from the
+  // Trade page (origins are NEAR-only, and dry quotes to other chains are rejected), so only rows
+  // whose both sides are NEAR tokens get a Copy link. No token list = no Copy links, nothing else changes.
+  const [nearTokens, setNearTokens] = useState<Map<string, Token> | null>(null);
+  const unlocked = profile?.unlocked ?? false;
+  useEffect(() => {
+    if (!unlocked) return;
+    api.tokens().then(
+      (r) => setNearTokens(new Map(r.tokens.filter((tk) => tk.blockchain === "near").map((tk) => [tk.symbol, tk]))),
+      () => setNearTokens(null),
+    );
+  }, [unlocked]);
+
+  const copyLink = (tr: FeedTrade) => {
+    const from = nearTokens?.get(tr.originSymbol);
+    const to = nearTokens?.get(tr.destSymbol);
+    if (!profile || !from || !to || tr.seq === null || session?.account === profile.trader.id) return null;
+    const q = new URLSearchParams({ from: from.assetId, to: to.assetId, by: profile.trader.name, entry: String(tr.seq) });
+    return (
+      <Link
+        to={`/trade?${q}`}
+        aria-label={`Copy trade #${tr.seq}: ${tr.originSymbol} to ${tr.destSymbol}, on the Trade page with dry run on`}
+        className="num inline-flex min-h-11 items-center gap-1 rounded px-1.5 text-[11px] text-green transition-colors hover:underline lg:min-h-0 lg:py-0.5"
+      >
+        <CopyIcon size={12} strokeWidth={1.5} aria-hidden /> Copy
+      </Link>
+    );
+  };
 
   const onBought = async (r: BuyResult) => {
     setBuying(false);
@@ -179,7 +208,7 @@ export function Trader() {
                 {feed
                   .filter((tr) => tr.seq !== null)
                   .map((tr) => (
-                    <TradeRow key={tr.id} t={tr} />
+                    <TradeRow key={tr.id} t={tr} action={copyLink(tr)} />
                   ))}
               </ul>
               {/* Quotes without a settled trade have no entry number and are not in the hash chain: folded, not hidden. */}

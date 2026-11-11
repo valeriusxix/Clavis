@@ -1,8 +1,8 @@
 import { ArrowDown, BadgeCheck, ChevronDown, CircleCheck, CircleX, FlaskConical, Info, Send, ShieldAlert, Wallet } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { ConfidentialBadge, SimulatedBadge } from "../components/Badge";
-import { Button, Card, Dialog, ErrorNote, fieldClass, Spinner } from "../components/ui";
+import { Button, Card, Dialog, ErrorNote, fieldClass, Notice, Spinner } from "../components/ui";
 import { api, type FeedTrade, type QuoteResult, type Token } from "../lib/api";
 import { qty, shortHash, usd } from "../lib/format";
 import { explorerTxUrl, sendDeposit } from "../lib/near";
@@ -45,6 +45,10 @@ export function Trade() {
   const [error, setError] = useState<string | null>(null);
   const [quote, setQuote] = useState<QuoteResult | null>(null);
   const [filled, setFilled] = useState<FeedTrade | null>(null);
+  // Copy from a trader's feed: /trade?from=<assetId>&to=<assetId>&by=<name>&entry=<seq>.
+  // Only the pair is prefilled. Amount stays 1 and dry run stays ON; nothing here reads `dry`.
+  const [params] = useSearchParams();
+  const [copying, setCopying] = useState<{ by: string; entry: string; ok: boolean } | null>(null);
 
   useEffect(() => {
     api.tokens().then(
@@ -53,11 +57,17 @@ export function Trade() {
         setTokenSource(r.source);
         const near = r.tokens.find((t) => t.symbol === "wNEAR");
         const usdc = r.tokens.find((t) => t.symbol === "USDC" && t.blockchain === "near");
-        setOrigin(near?.assetId ?? "");
-        setDest(usdc?.assetId ?? "");
+        const from = r.tokens.find((t) => t.assetId === params.get("from") && t.blockchain === "near");
+        const to = r.tokens.find((t) => t.assetId === params.get("to"));
+        const prefill = from && to && from.assetId !== to.assetId;
+        setOrigin(prefill ? from.assetId : (near?.assetId ?? ""));
+        setDest(prefill ? to.assetId : (usdc?.assetId ?? ""));
+        if (params.get("by")) setCopying({ by: params.get("by")!, entry: params.get("entry") ?? "", ok: Boolean(prefill) });
       },
       (e: Error) => setError(e.message),
     );
+    // Read once on arrival: later edits to the form must not be overwritten by the URL.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Keep origin tokens on NEAR (NEP-141): the deposit is then one wallet ft_transfer (AGENT.md 6.2).
@@ -114,6 +124,22 @@ export function Trade() {
       <p className="mt-2 max-w-2xl text-sm text-muted">
         Get a confidential quote from the NEAR Intents 1Click API. Dry run is on by default: nothing executes and no funds move.
       </p>
+      {copying && (
+        <div className="mt-4 max-w-2xl">
+          <Notice>
+            {copying.ok ? (
+              <span>
+                Copying <span className="font-medium">{copying.by}</span>'s trade{copying.entry ? ` #${copying.entry}` : ""}: the pair is filled in.
+                Set your own amount, then get a quote.
+              </span>
+            ) : (
+              <span>
+                {copying.by}'s trade could not be filled in: one of its tokens is not available here. Pick the pair yourself.
+              </span>
+            )}
+          </Notice>
+        </div>
+      )}
 
       <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,27rem)_minmax(0,1fr)]">
         <Card danger={!dry} className="space-y-4 p-5">
