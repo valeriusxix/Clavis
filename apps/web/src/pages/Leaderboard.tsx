@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 import { CutKey } from "../components/Key";
 import { LEADER_COLUMNS, TraderRow } from "../components/TraderRow";
 import { Card, ErrorNote, Spinner } from "../components/ui";
@@ -29,15 +30,23 @@ export function Leaderboard() {
             PnL stays public.
           </h1>
           <p className="mt-4 max-w-md text-base leading-6 text-muted">
-            Traders are ranked by 30-day PnL. Real trades run through NEAR Confidential Intents and stay hidden until you buy a key.
+            Every trader's PnL is hash-committed on NEAR and checkable in your browser. Their trades, made through NEAR Confidential Intents,
+            stay sealed until you buy a key and follow them.
           </p>
         </div>
         <div className="mx-auto w-full max-w-xl lg:mr-0">
           <CutKey hash={active?.headHash} className="-rotate-6" />
           {active && (
-            <p className="mt-1 flex flex-wrap justify-end gap-x-3 text-xs text-faint">
-              <span>Cut from {active.name}'s latest log hash</span>
-              <span className="num">{shortHash(active.headHash)}</span>
+            <p className="mt-1 flex flex-wrap items-center justify-end gap-x-3 text-xs text-faint">
+              <span>
+                Cut from {active.name}'s latest log hash <span className="num">{shortHash(active.headHash)}</span>
+              </span>
+              <Link
+                to={`/trader/${encodeURIComponent(active.id)}`}
+                className="inline-flex min-h-11 items-center gap-1 text-green hover:underline lg:min-h-0"
+              >
+                This key opens <span className="num">{active.tradeCount}</span> sealed trades for <span className="num">{active.keyPriceNear} NEAR</span> →
+              </Link>
             </p>
           )}
         </div>
