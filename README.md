@@ -14,7 +14,7 @@ No wallet, no funds and no API keys needed. Every step says what to do and what 
 
 ### Option A: Hosted demo (fastest)
 
-1. **Open** `TODO: hosted URL`
+1. **Open** https://clavisapp.up.railway.app
    → You see the **Leaderboard**: traders ranked by 30-day PnL, with total PnL, win rate, trades committed and key price. Their trades are hidden.
 2. **Click any trader** (try `quiet-whale`).
    → You see their equity curve and a blurred feed with a lock: **"N trades hidden"**.
