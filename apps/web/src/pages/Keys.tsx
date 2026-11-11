@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { SimulatedBadge } from "../components/Badge";
 import { CutKey } from "../components/Key";
 import { Button, Card, ErrorNote, Spinner } from "../components/ui";
 import { api } from "../lib/api";
@@ -86,7 +85,12 @@ export function Keys() {
                     <CutKey hash={k.headHash} spent={!k.active} />
                     <div className="mt-3 flex flex-wrap items-baseline gap-x-2">
                       <span className="font-medium">{k.traderName}</span>
-                      {k.simulated && <SimulatedBadge />}
+                      {/* `simulated` is the purchase, not the trader: a demo key can open a real trader's feed. */}
+                      {k.simulated && (
+                        <span className="num text-[11px] leading-4 text-muted" title="Demo key: the purchase was simulated. The trader's own SIMULATED label is on their profile.">
+                          SIMULATED purchase
+                        </span>
+                      )}
                     </div>
                     <div className={`num mt-1 text-xs ${k.active ? "text-muted" : "text-down"}`}>
                       {k.active ? "until" : "expired"} {date(k.expiresAt)}
