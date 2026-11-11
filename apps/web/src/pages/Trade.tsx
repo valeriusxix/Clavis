@@ -181,6 +181,20 @@ export function Trade() {
             <Card className="p-5">
               <h2 className="font-medium">No quote yet</h2>
               <p className="mt-1 text-sm text-muted">Quotes from the NEAR Intents 1Click API appear here.</p>
+              <ol className="mt-4 space-y-2 text-sm text-muted">
+                <li className="flex gap-3">
+                  <span className="num w-4 shrink-0 text-green">1</span>
+                  <span>Pick the tokens and an amount. The quote is requested with confidentiality "basic".</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="num w-4 shrink-0 text-green">2</span>
+                  <span>Read the live quote: amount out, USD values, time estimate and 1Click's signature.</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="num w-4 shrink-0 text-green">3</span>
+                  <span>With dry run on, record it as a SIMULATED trade in your own trader profile. No funds move.</span>
+                </li>
+              </ol>
             </Card>
           )}
           {quote && <QuoteCard q={quote} />}

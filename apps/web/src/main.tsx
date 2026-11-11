@@ -5,6 +5,7 @@ import "@fontsource/ibm-plex-mono/latin-500.css";
 import { lazy, StrictMode, Suspense, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, Link, RouterProvider } from "react-router";
+import { CutKey } from "./components/Key";
 import { Layout } from "./components/Layout";
 import "./index.css";
 import { SessionProvider } from "./lib/session";
@@ -40,12 +41,15 @@ const router = createBrowserRouter([
       {
         path: "*",
         element: (
-          <p className="pt-8 text-muted">
-            Page not found.{" "}
-            <Link className="text-green hover:underline" to="/">
-              Leaderboard
-            </Link>
-          </p>
+          <div className="max-w-md pt-8">
+            <CutKey hash={null} className="-rotate-3" />
+            <p className="mt-4 text-muted">
+              Page not found. This key opens nothing.{" "}
+              <Link className="inline-flex min-h-11 items-center text-green hover:underline lg:min-h-0" to="/">
+                Back to the leaderboard →
+              </Link>
+            </p>
+          </div>
         ),
       },
     ],
