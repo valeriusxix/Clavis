@@ -9,7 +9,8 @@ type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 export function Button({ variant = "secondary", size = "md", className = "", ...rest }: BtnProps) {
   const base =
     "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-medium transition-[background-color,border-color,color,transform] duration-150 ease-out active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100";
-  const sizes = { sm: "h-9 px-3 text-sm", md: "h-10 px-4 text-sm", lg: "h-12 px-5 text-[15px]" };
+  // 44px tall on touch widths, the compact heights only from lg up.
+  const sizes = { sm: "h-11 px-3 text-sm lg:h-9", md: "h-11 px-4 text-sm lg:h-10", lg: "h-12 px-5 text-[15px]" };
   const variants = {
     primary: "bg-green-deep text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14)] hover:bg-green-deep-hover",
     secondary: "border border-line-strong bg-ink-800 text-fg shadow-[inset_0_1px_0_rgb(255_255_255/0.05)] hover:border-faint",

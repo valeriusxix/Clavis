@@ -69,14 +69,14 @@ export function Layout() {
                 </span>
                 {session.kind === "demo" && (
                   <button
-                    className="text-sm text-muted transition-colors hover:text-fg"
+                    className="h-11 px-1 text-sm text-muted transition-colors hover:text-fg"
                     title="Delete your demo keys and simulated trades and start a fresh demo account"
                     onClick={() => void resetDemo().then(() => window.location.reload())}
                   >
                     Reset demo
                   </button>
                 )}
-                <Button size="sm" variant="ghost" className="w-9 px-0!" onClick={() => void logout()} aria-label="Log out">
+                <Button size="sm" variant="ghost" className="w-11 px-0!" onClick={() => void logout()} aria-label="Log out">
                   <LogOut size={16} strokeWidth={1.5} aria-hidden />
                 </Button>
               </>
@@ -98,10 +98,15 @@ export function Layout() {
       </main>
 
       <footer className="border-t border-line bg-ink-950">
-        <div className="page flex flex-wrap gap-x-6 gap-y-1 py-5 text-xs text-faint">
-          <span>Trades execute on NEAR Intents mainnet. Key sales and commitments run on NEAR {meta?.network ?? "testnet"}.</span>
+        <div className="page flex flex-wrap items-center gap-x-6 py-3 text-xs text-faint">
+          <span className="py-2">Trades execute on NEAR Intents mainnet. Key sales and commitments run on NEAR {meta?.network ?? "testnet"}.</span>
           {meta?.contractId && (
-            <a className="num transition-colors hover:text-fg" href={explorerAccountUrl(network, meta.contractId)} target="_blank" rel="noreferrer">
+            <a
+              className="num inline-flex min-h-11 items-center transition-colors hover:text-fg"
+              href={explorerAccountUrl(network, meta.contractId)}
+              target="_blank"
+              rel="noreferrer"
+            >
               contract {meta.contractId}
             </a>
           )}

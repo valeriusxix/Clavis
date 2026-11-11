@@ -154,14 +154,17 @@ export function Trade() {
                     {dry ? "Quote only. No deposit address, nothing executes." : "REAL trade on NEAR Intents mainnet."}
                   </div>
                 </div>
+                {/* The button is the 44px hit area; the pill inside is the visual switch. */}
                 <button
                   role="switch"
                   aria-checked={dry}
                   aria-label="Dry run"
                   onClick={toggleDry}
-                  className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-150 ${dry ? "bg-green-deep" : "bg-down"}`}
+                  className="-mr-2 flex h-11 w-15 shrink-0 items-center justify-center rounded-lg"
                 >
-                  <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-150 ${dry ? "translate-x-5" : ""}`} />
+                  <span className={`relative block h-6 w-11 rounded-full transition-colors duration-150 ${dry ? "bg-green-deep" : "bg-down"}`}>
+                    <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-150 ${dry ? "translate-x-5" : ""}`} />
+                  </span>
                 </button>
               </div>
 

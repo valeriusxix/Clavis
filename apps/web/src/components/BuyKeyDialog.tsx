@@ -54,7 +54,11 @@ export function BuyKeyDialog({ trader, onClose, onBought }: { trader: TraderStat
             Unlock every trade by <span className="text-fg">{trader.name}</span> for {trader.periodDays} days.
           </p>
         </div>
-        <button onClick={onClose} className="text-muted transition-colors hover:text-fg" aria-label="Close">
+        <button
+          onClick={onClose}
+          className="-mt-3 -mr-3 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:text-fg"
+          aria-label="Close"
+        >
           <X size={18} strokeWidth={1.5} />
         </button>
       </div>

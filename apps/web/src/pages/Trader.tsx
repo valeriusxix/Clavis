@@ -66,8 +66,8 @@ export function Trader() {
   const t: TraderStats = profile.trader;
 
   return (
-    <div className="rise space-y-6 pt-6">
-      <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-fg">
+    <div className="rise space-y-6 pt-3">
+      <Link to="/" className="inline-flex min-h-11 items-center gap-1 pr-2 text-sm text-muted transition-colors hover:text-fg">
         <ArrowLeft size={16} strokeWidth={1.5} aria-hidden /> Leaderboard
       </Link>
 
