@@ -230,7 +230,8 @@ function StatRow({ label, value, className = "" }: { label: string; value: strin
 function KeyPanel({ t, unlocked, own, onBuy }: { t: TraderStats; unlocked: boolean; own: boolean; onBuy: () => void }) {
   return (
     <Card className="p-6">
-      <div className="-mx-1 -mt-14">
+      {/* Capped on tablets, where the side panel spans the full width and the key would be 700px long. */}
+      <div className="-mx-1 -mt-14 md:mx-auto md:max-w-sm lg:-mx-1 lg:max-w-none">
         <CutKey hash={t.headHash} className="-rotate-3" />
       </div>
 
