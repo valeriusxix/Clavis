@@ -243,6 +243,11 @@ export function registerTradeRoutes(app: FastifyInstance, ctx: Ctx) {
     const trade = ownTrade(req.params.id, session.sub);
     if (!trade.deposit_address) throw new ApiError(409, "NO_DEPOSIT_ADDRESS", "This quote has no deposit address (dry quote?).");
     const body = DepositBody.parse(req.body ?? {});
+    // The deposit is already on-chain: record it before telling 1Click, so a 1Click error can't lose it.
+    ctx.repo.updateTrade(trade.id, { tx_hash: body.txHash, status: "KNOWN_DEPOSIT_TX", payer: session.payer ?? trade.payer ?? null });
+    // /v0/deposit/submit only speeds up detection; 1Click finds the deposit by itself and the status
+    // poller follows it either way. So a failure here is a notice, not an error.
+    let notice: string | null = null;
     try {
       await ctx.oneclick.submitDeposit({
         txHash: body.txHash,
@@ -251,11 +256,11 @@ export function registerTradeRoutes(app: FastifyInstance, ctx: Ctx) {
         ...(trade.deposit_memo ? { memo: trade.deposit_memo } : {}),
       });
     } catch (err) {
-      if (err instanceof OneClickError) throw new ApiError(502, "ONECLICK_ERROR", err.message);
-      throw err;
+      if (!(err instanceof OneClickError)) throw err;
+      req.log.warn({ err: err.message, tradeId: trade.id }, "1Click deposit/submit failed; relying on status polling");
+      notice = "1Click did not confirm the deposit hint, so detection may take a little longer. Your deposit is recorded.";
     }
-    ctx.repo.updateTrade(trade.id, { tx_hash: body.txHash, status: "KNOWN_DEPOSIT_TX", payer: session.payer ?? trade.payer ?? null });
-    return { trade: feedRow(ctx.repo.getTrade(trade.id)!) };
+    return { trade: feedRow(ctx.repo.getTrade(trade.id)!), notice };
   });
 
   app.get<{ Params: { id: string } }>("/api/trades/:id", async (req) => {

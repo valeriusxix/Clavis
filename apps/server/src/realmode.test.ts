@@ -8,6 +8,7 @@ import { openDb, Repo } from "./db/db";
 import { SEED_ASSETS, SEED_END } from "./demo/seed";
 import { seedDatabase } from "./demo/seedDb";
 import basicQuote from "./oneclick/__fixtures__/mainnet-basic-dry-quote.json";
+import { OneClickError } from "./oneclick/client";
 import { TokenCache } from "./oneclick/tokens";
 import type { QuoteRequest, QuoteResponse } from "./oneclick/types";
 
@@ -16,7 +17,7 @@ const PAYER = "clavis-dev.near";
 const REAL = "real-trader.clavis-app.testnet";
 const fullAccess = { viewAccessKey: async () => ({ permission: "FullAccess" }) } as unknown as Provider;
 
-async function setup(quoteUsd = "1.69") {
+async function setup(quoteUsd = "1.69", opts: { submitFails?: boolean } = {}) {
   const repo = new Repo(openDb(":memory:"));
   await seedDatabase(repo, NOW, "/nonexistent.json");
   const requests: QuoteRequest[] = [];
@@ -32,6 +33,8 @@ async function setup(quoteUsd = "1.69") {
     },
     async submitDeposit(req) {
       deposits.push(req);
+      // As seen on mainnet 2026-11-11: HTTP 500 {"message":"Empty AMQP response"}.
+      if (opts.submitFails) throw new OneClickError("1Click POST /v0/deposit/submit -> HTTP 500", 500, { message: "Empty AMQP response" });
       return {} as never;
     },
     async getStatus() {
@@ -104,6 +107,18 @@ describe("real mode (Phase 4)", () => {
     expect(dep.statusCode).toBe(200);
     expect(deposits).toEqual([{ txHash: "HASH123", depositAddress: "0f1e2d3c4b5a.deposit", nearSenderAccount: PAYER }]);
     expect(repo.getTrade(id)).toMatchObject({ status: "KNOWN_DEPOSIT_TX", tx_hash: "HASH123" });
+  });
+
+  it("keeps the deposit tx hash when 1Click's optional deposit/submit fails", async () => {
+    const { app, repo, deposits } = await setup("1.69", { submitFails: true });
+    const cookie = (await mainnetLogin(app, PAYER)).cookies.map((c) => `${c.name}=${c.value}`).join("; ");
+    const q = await app.inject({ method: "POST", url: "/api/trades/quote", headers: { cookie }, payload: real("0.4", SEED_ASSETS.USDC.assetId) });
+    const id = q.json().tradeId as string;
+    const dep = await app.inject({ method: "POST", url: `/api/trades/${id}/deposit`, headers: { cookie }, payload: { txHash: "HASH500" } });
+    expect(dep.statusCode).toBe(200);
+    expect(dep.json().notice).toMatch(/recorded/);
+    expect(deposits).toHaveLength(1); // 1Click was still asked
+    expect(repo.getTrade(id)).toMatchObject({ status: "KNOWN_DEPOSIT_TX", tx_hash: "HASH500", payer: PAYER });
   });
 
   it("enforces the $4 cap before quoting and against 1Click's own USD value", async () => {
