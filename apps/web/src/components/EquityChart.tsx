@@ -25,6 +25,17 @@ function ChartTip({ active, label, value }: { active?: boolean; label?: string |
 export function EquityChart({ points }: { points: { t: number; equityUsd: number }[] }) {
   if (points.length === 0) return <div className="flex h-72 items-center justify-center text-sm text-muted">No trades yet.</div>;
   const last = points[points.length - 1]!.equityUsd;
+  // One or two daily points draw a dot or a stub, which reads as broken. Say what there is instead.
+  if (points.length < 3) {
+    return (
+      <div className="flex h-72 flex-col items-center justify-center gap-1 px-4 text-center">
+        <div className={`num text-3xl leading-none ${last >= 0 ? "text-up" : "text-down"}`}>{signedUsd(last)}</div>
+        <div className="mt-2 text-sm text-muted">
+          {points.length === 1 ? "One day" : "Two days"} of history, since {date(points[0]!.t)}. The curve appears after three days.
+        </div>
+      </div>
+    );
+  }
   const stroke = last >= 0 ? "var(--color-up)" : "var(--color-down)";
   const crossesZero = points.some((p) => p.equityUsd < 0) && points.some((p) => p.equityUsd > 0);
   return (
