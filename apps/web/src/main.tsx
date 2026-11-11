@@ -1,5 +1,5 @@
 import "@fontsource-variable/ibm-plex-sans/wght.css";
-import "@fontsource-variable/newsreader/opsz.css";
+import "@fontsource-variable/newsreader/wght.css";
 import "@fontsource/ibm-plex-mono/latin-400.css";
 import "@fontsource/ibm-plex-mono/latin-500.css";
 import { lazy, StrictMode, Suspense, type ReactNode } from "react";
