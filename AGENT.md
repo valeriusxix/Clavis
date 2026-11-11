@@ -39,7 +39,7 @@ These come from HACKATHON.md and from common sense. Follow them even if a later 
 4. **Never post on X** or anywhere else. Draft text only; the human posts.
 5. **Never submit** to the hackathon without printing the full JSON payload and getting a "yes". Each repository can be submitted only once.
 6. **Never invent endpoints, contract methods, field names, or package versions.** Read the docs (section 6) or the OpenAPI spec first. If something is unclear, write a tiny script that calls the real API, print the response, and build from that.
-7. **There is no testnet for NEAR Intents.** Use `dry: true` quotes for development. Real swaps are mainnet only, with **≤ $2 per trade**, from a **separate dev account**, and only after human approval.
+7. **There is no testnet for NEAR Intents.** Use `dry: true` quotes for development. Real swaps are mainnet only, with **≤ $4 per trade** (raised from $2 by the human on 2026-11-11), from a **separate dev account**, and only after human approval.
 8. **Default to dry run** everywhere in the UI. Real execution needs an explicit toggle plus a confirmation dialog.
 9. Be honest in the README and UI about the trust model (section 11). Label simulated data as **SIMULATED** everywhere it appears.
 10. Stop and ask the human at every **CHECKPOINT** in section 13.
@@ -586,7 +586,7 @@ Today is 2026-11-01. Leave the last 2 days for polish and submission.
 - **Acceptance:** the full judge path in README section "Test it in 3 minutes" works in a fresh browser with no wallet.
 
 ### Phase 4 — Real trades (Nov 8–10)
-- **CHECKPOINT 4:** ask the human to fund a separate mainnet dev account with ~$10 and approve **3–5 trades of ≤ $2**.
+- **CHECKPOINT 4:** ask the human to fund a separate mainnet dev account with ~$10 and approve **3–5 trades of ≤ $4**.
 - Execute via the app (real mode), confirm `SUCCESS`, store real quotes, verify signatures, commit heads, and export to `real-trades.json`.
 - **Acceptance:** the real trader shows on the leaderboard with "1Click-signed ✓" rows and a matching on-chain head.
 
@@ -767,7 +767,7 @@ Fees are included automatically because we use what was actually received. Full 
 |---|---|
 | Clavis contract | `TODO: clavis.<account>.testnet` (NEAR **testnet**) |
 | Example commit transaction | `TODO: explorer link` |
-| Trade execution | NEAR Intents **mainnet**. Intents has no testnet, so real trades used ≤ $2 each from a dev account. |
+| Trade execution | NEAR Intents **mainnet**. Intents has no testnet, so real trades used ≤ $4 each from a dev account. |
 | Real trader account | `TODO` |
 
 Simulated traders are labeled **SIMULATED** everywhere they appear.

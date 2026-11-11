@@ -42,8 +42,8 @@ const EnvSchema = z.object({
   /** Real mode (Phase 4): the testnet trader identity and the mainnet account allowed to trade as it. */
   REAL_TRADER_ID: optionalString,
   REAL_TRADER_MAINNET_ACCOUNT: optionalString,
-  /** Hard cap per real trade in USD (AGENT.md hard rule 7: <= $2). */
-  REAL_TRADE_MAX_USD: z.preprocess(emptyToUndefined, z.coerce.number().positive().max(2).default(2)),
+  /** Hard cap per real trade in USD (AGENT.md hard rule 7: <= $4, raised from $2 by the human on 2026-11-11). */
+  REAL_TRADE_MAX_USD: z.preprocess(emptyToUndefined, z.coerce.number().positive().max(4).default(4)),
   NEAR_MAINNET_RPC_URL: optionalString,
 
   /** Demo traders' testnet accounts: <handle>[-<version>].<parent> (docs/SEEDING.md). */

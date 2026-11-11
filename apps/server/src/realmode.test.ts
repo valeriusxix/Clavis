@@ -106,15 +106,15 @@ describe("real mode (Phase 4)", () => {
     expect(repo.getTrade(id)).toMatchObject({ status: "KNOWN_DEPOSIT_TX", tx_hash: "HASH123" });
   });
 
-  it("enforces the $2 cap before quoting and against 1Click's own USD value", async () => {
+  it("enforces the $4 cap before quoting and against 1Click's own USD value", async () => {
     const { app, requests } = await setup();
     const cookie = (await mainnetLogin(app, PAYER)).cookies.map((c) => `${c.name}=${c.value}`).join("; ");
-    const big = await app.inject({ method: "POST", url: "/api/trades/quote", headers: { cookie }, payload: real("1") }); // ~$3.60
+    const big = await app.inject({ method: "POST", url: "/api/trades/quote", headers: { cookie }, payload: real("1.5") }); // ~$5.40
     expect(big.statusCode).toBe(400);
     expect(big.json().error.code).toBe("OVER_CAP");
     expect(requests).toHaveLength(0); // never asked 1Click for a deposit address
 
-    const priced = await setup("2.50");
+    const priced = await setup("4.50"); // ~$1.44 by our price, but 1Click values it above $4 * 1.02
     const c2 = (await mainnetLogin(priced.app, PAYER)).cookies.map((c) => `${c.name}=${c.value}`).join("; ");
     const over = await priced.app.inject({ method: "POST", url: "/api/trades/quote", headers: { cookie: c2 }, payload: real("0.4") });
     expect(over.statusCode).toBe(400);

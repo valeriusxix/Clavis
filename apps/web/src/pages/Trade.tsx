@@ -10,7 +10,7 @@ import { useSession } from "../lib/session";
 
 /** Final 1Click statuses. INCOMPLETE_DEPOSIT is not final, so the page keeps polling (AUDIT L1). */
 const TERMINAL = new Set(["SUCCESS", "REFUNDED", "FAILED"]);
-const REAL_CAP_USD = 2;
+const REAL_CAP_USD = 4; // keep in step with REAL_TRADE_MAX_USD on the server, which enforces it
 
 const label = (t: Token) => (t.symbol === "wNEAR" ? "NEAR (wNEAR)" : t.blockchain === "near" ? t.symbol : `${t.symbol} (${t.blockchain})`);
 

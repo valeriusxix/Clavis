@@ -151,7 +151,7 @@ Fees are included automatically because we use what was actually received. Full 
 |---|---|
 | Clavis contract | `clavis-app.testnet` (NEAR **testnet**) |
 | Example commit transaction | [`9tvg62ZL…`](https://nearvalidate.org/txns/9tvg62ZLVJdn2RHyp6ZdBPuvukQRCNWHCHQ2dExs3Bk6?network=testnet) (`commit_log` for `quiet-whale`, 23 trades) |
-| Trade execution | NEAR Intents **mainnet**. Intents has no testnet, so real trades used ≤ $2 each from a dev account. |
+| Trade execution | NEAR Intents **mainnet**. Intents has no testnet, so real trades used ≤ $4 each from a dev account. |
 | Real trader account | `TODO` |
 
 Simulated traders are labeled **SIMULATED** everywhere they appear. Each has a deterministic, seeded 45-day history and a testnet account id under the contract (for example `quiet-whale.clavis-app.testnet`). Their log hashes are on-chain only once those accounts are registered with the contract; "Trades committed" on each row shows how many trades the on-chain hash covers.

@@ -375,7 +375,7 @@ AGENT.md section 9 is implemented as written. Where it is silent:
 - **Real quotes** (`dry: false`):
   - NEAR-chain tokens only (wNEAR, USDC, USDT on NEAR). The deposit is one wallet transaction, and
     `recipient` and `refundTo` are forced to the payer's own mainnet account.
-  - **$2 cap** (`REAL_TRADE_MAX_USD`, max 2). Checked before quoting, using the token price; a quote
+  - **$4 cap** (`REAL_TRADE_MAX_USD`, max 4; raised from $2 by the human on 2026-11-11). Checked before quoting, using the token price; a quote
     over the cap is refused without ever requesting a deposit address. Checked again against
     1Click's `amountInUsd` (2% tolerance); over it, the trade is stored as FAILED and no deposit
     address is shown.
