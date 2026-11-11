@@ -211,6 +211,13 @@ export function Trader() {
                     <TradeRow key={tr.id} t={tr} action={copyLink(tr)} />
                   ))}
               </ul>
+              {/* Says why some (or all) rows have no Copy link, so the hero's "copy" claim is never silently missing. */}
+              {nearTokens && session?.account !== t.id && feed.some((tr) => tr.seq !== null && !copyLink(tr)) && (
+                <p className="border-t border-line px-4 py-3 text-xs leading-5 text-faint sm:px-6">
+                  {feed.some((tr) => tr.seq !== null && copyLink(tr)) ? "Copy appears on" : "None of these trades can be copied yet. Copy works for"} trades
+                  between NEAR tokens ({[...nearTokens.keys()].join(", ")}). Cross-chain trades can't be quoted from the Trade page yet.
+                </p>
+              )}
               {/* Quotes without a settled trade have no entry number and are not in the hash chain: folded, not hidden. */}
               {feed.some((tr) => tr.seq === null) && (
                 <details className="group border-t border-line">
