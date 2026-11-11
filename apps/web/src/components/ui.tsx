@@ -34,6 +34,11 @@ export function Spinner({ label = "Loading" }: { label?: string }) {
   );
 }
 
+/** A static placeholder bar. No shimmer: the page settles in well under a second and motion should mean something. */
+export function Bone({ className = "" }: { className?: string }) {
+  return <span aria-hidden className={`block rounded bg-line ${className}`} />;
+}
+
 export function ErrorNote({ children }: { children: ReactNode }) {
   return <div className="rounded-lg border border-down/40 bg-ink-900 px-3 py-2 text-sm text-down">{children}</div>;
 }

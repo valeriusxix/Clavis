@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { CutKey } from "../components/Key";
 import { LEADER_COLUMNS, TraderRow } from "../components/TraderRow";
-import { Card, ErrorNote, Spinner } from "../components/ui";
+import { Bone, Card, ErrorNote, Spinner } from "../components/ui";
 import { api, type TraderStats } from "../lib/api";
 import { shortHash } from "../lib/format";
 import { useSession } from "../lib/session";
@@ -59,7 +59,28 @@ export function Leaderboard() {
         </div>
 
         {error && <ErrorNote>Could not load traders: {error}</ErrorNote>}
-        {!traders && !error && <Spinner />}
+        {!traders && !error && (
+          <Card className="overflow-hidden">
+            <span className="sr-only">
+              <Spinner />
+            </span>
+            <div className="hidden h-10 border-b border-line lg:block" />
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className={`grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 border-b border-line px-4 py-3 last:border-0 sm:px-6 lg:min-h-[4.5rem] lg:gap-x-4 lg:py-0 ${LEADER_COLUMNS}`}>
+                <Bone className="h-3 w-3" />
+                <span className="space-y-2">
+                  <Bone className="h-3.5 w-28" />
+                  <Bone className="h-2.5 w-40" />
+                </span>
+                <Bone className="h-3.5 w-14 justify-self-end" />
+                <Bone className="hidden h-3 w-20 justify-self-end lg:block" />
+                <Bone className="hidden h-3 w-8 justify-self-end lg:block" />
+                <Bone className="hidden h-3 w-12 justify-self-end lg:block" />
+                <Bone className="col-span-2 col-start-2 h-3 w-16 justify-self-end lg:col-span-1 lg:col-start-auto" />
+              </div>
+            ))}
+          </Card>
+        )}
         {traders && (
           <Card className="overflow-hidden">
             <div className={`hidden h-10 items-center gap-x-4 border-b border-line px-6 text-xs text-faint lg:grid ${LEADER_COLUMNS}`}>

@@ -8,7 +8,7 @@ import { CutKey, MiniKey } from "../components/Key";
 import { LockedFeed } from "../components/LockedFeed";
 import { TradeHeader, TradeRow } from "../components/TradeRow";
 import { VerifyPanel } from "../components/VerifyPanel";
-import { Button, Card, ErrorNote, Notice, Spinner } from "../components/ui";
+import { Bone, Button, Card, ErrorNote, Notice, Spinner } from "../components/ui";
 import { api, type FeedTrade, type TraderStats } from "../lib/api";
 import { date, pct, shortHash, signedUsd, tone, usd } from "../lib/format";
 import { useSession } from "../lib/session";
@@ -57,9 +57,42 @@ export function Trader() {
     );
   }
   if (!profile) {
+    // Same boxes as the loaded page, so nothing jumps when the data lands.
     return (
-      <div className="pt-8">
-        <Spinner />
+      <div className="space-y-6 pt-3">
+        <span className="sr-only">
+          <Spinner />
+        </span>
+        <div className="flex min-h-11 items-center">
+          <Bone className="h-3 w-24" />
+        </div>
+        <div className="grid items-start gap-x-8 gap-y-12 lg:grid-cols-[minmax(0,1fr)_22.5rem]">
+          <div className="min-w-0 space-y-6">
+            <div className="grid grid-cols-1 items-end gap-x-8 gap-y-4 sm:grid-cols-[minmax(0,1fr)_auto]">
+              <div className="space-y-3">
+                <Bone className="h-10 w-56" />
+                <Bone className="h-3 w-40" />
+                <Bone className="h-2.5 w-48" />
+              </div>
+              <Bone className="h-10 w-32 sm:justify-self-end" />
+            </div>
+            <Card className="p-5">
+              <Bone className="h-4 w-24" />
+              <div className="mt-3 h-72" />
+            </Card>
+          </div>
+          <div className="min-w-0 space-y-4">
+            <Card className="h-72 p-6">
+              <Bone className="mt-24 h-8 w-32" />
+              <Bone className="mt-4 h-12 w-full" />
+            </Card>
+            <Card className="space-y-6 p-6">
+              {Array.from({ length: 5 }, (_, i) => (
+                <Bone key={i} className="h-3 w-full" />
+              ))}
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
