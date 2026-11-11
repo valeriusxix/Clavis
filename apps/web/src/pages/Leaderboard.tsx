@@ -83,7 +83,8 @@ export function Leaderboard() {
         )}
         {traders && (
           <Card className="overflow-hidden">
-            <div className={`hidden h-10 items-center gap-x-4 border-b border-line px-6 text-xs text-faint md:grid ${LEADER_COLUMNS}`}>
+            {/* Visual column heads; each row's aria-label already names the trader and its 30-day PnL. */}
+            <div aria-hidden className={`hidden h-10 items-center gap-x-4 border-b border-line px-6 text-xs text-faint md:grid ${LEADER_COLUMNS}`}>
               <span>#</span>
               <span>Trader</span>
               <span className="text-right">30-day PnL</span>
@@ -94,9 +95,11 @@ export function Leaderboard() {
               </span>
               <span className="text-right">Key price</span>
             </div>
-            {traders.map((t, i) => (
-              <TraderRow key={t.id} t={t} rank={i + 1} onActive={() => setActiveId(t.id)} />
-            ))}
+            <ol aria-label="Traders ranked by 30-day PnL">
+              {traders.map((t, i) => (
+                <TraderRow key={t.id} t={t} rank={i + 1} onActive={() => setActiveId(t.id)} />
+              ))}
+            </ol>
           </Card>
         )}
 

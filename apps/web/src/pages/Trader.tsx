@@ -151,7 +151,7 @@ export function Trader() {
               <StatRow label="PnL % (all time)" value={pct(t.pnlPct)} className={tone(t.pnlPct)} />
               <StatRow label="Win rate" value={t.winRate === null ? "—" : `${Math.round(t.winRate * 100)}%`} />
               <StatRow label="Peak capital" value={usd(t.capitalUsd)} />
-              <StatRow label="Trades committed" value={`${t.committedCount} / ${t.tradeCount}`} />
+              <StatRow label="Trades committed" value={`${t.committedCount} / ${t.tradeCount}`} hint="Trades covered by the hash stored in the Clavis contract on NEAR" />
             </dl>
           </Card>
         </div>
@@ -175,7 +175,7 @@ export function Trader() {
           ) : (
             <Card className="overflow-hidden">
               <TradeHeader />
-              <ul>
+              <ul aria-label="Logged trades, newest first">
                 {feed
                   .filter((tr) => tr.seq !== null)
                   .map((tr) => (
@@ -217,10 +217,12 @@ export function Trader() {
   );
 }
 
-function StatRow({ label, value, className = "" }: { label: string; value: string; className?: string }) {
+function StatRow({ label, value, className = "", hint }: { label: string; value: string; className?: string; hint?: string }) {
   return (
     <div className="flex items-baseline justify-between gap-4 border-b border-line py-2.5 last:border-0">
-      <dt className="text-sm text-muted">{label}</dt>
+      <dt className={`text-sm text-muted ${hint ? "cursor-help underline decoration-dotted decoration-faint underline-offset-4" : ""}`} title={hint}>
+        {label}
+      </dt>
       <dd className={`num truncate text-sm ${className}`}>{value}</dd>
     </div>
   );

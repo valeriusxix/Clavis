@@ -14,12 +14,13 @@ export const LEADER_COLUMNS =
 export function TraderRow({ t, rank, onActive }: { t: TraderStats; rank: number; onActive?: () => void }) {
   const win = t.winRate === null ? "—" : `${Math.round(t.winRate * 100)}%`;
   return (
+    <li className="border-b border-line last:border-0">
     <Link
       to={`/trader/${encodeURIComponent(t.id)}`}
       onMouseEnter={onActive}
       onFocus={onActive}
       aria-label={`${t.name}: 30-day PnL ${pct(t.pnl30dPct)}`}
-      className={`grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 border-b border-line px-4 py-3 transition-colors last:border-0 hover:bg-ink-850 focus-visible:-outline-offset-2 sm:px-6 md:min-h-[4.5rem] md:gap-x-4 md:py-0 ${LEADER_COLUMNS}`}
+      className={`grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3 transition-colors hover:bg-ink-850 focus-visible:-outline-offset-2 sm:px-6 md:min-h-[4.5rem] md:gap-x-4 md:py-0 ${LEADER_COLUMNS}`}
     >
       <span className="num text-sm text-faint">{rank}</span>
 
@@ -50,5 +51,6 @@ export function TraderRow({ t, rank, onActive }: { t: TraderStats; rank: number;
         </span>
       </div>
     </Link>
+    </li>
   );
 }

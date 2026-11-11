@@ -9,7 +9,7 @@ export const TRADE_COLUMNS =
 
 export function TradeHeader() {
   return (
-    <div className={`hidden h-10 border-b border-line px-6 text-xs text-faint ${TRADE_COLUMNS}`}>
+    <div aria-hidden className={`hidden h-10 border-b border-line px-6 text-xs text-faint ${TRADE_COLUMNS}`}>
       <span>Entry</span>
       <span>Time</span>
       <span>Side</span>
