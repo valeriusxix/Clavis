@@ -138,8 +138,9 @@ export const tokenContractOf = (assetId: string) => {
 /**
  * Send the 1Click deposit in ONE wallet transaction to the origin token contract:
  *   1. storage_deposit for the deposit address (registration_only: refunded if already registered),
- *   2. near_deposit (wrap native NEAR) when the origin is wNEAR,
+ *   2. when the origin is wNEAR: storage_deposit for the sender, then near_deposit (wrap native NEAR),
  *   3. ft_transfer of exactly amountIn to the deposit address (1 yoctoNEAR attached).
+ * The actions run as one receipt: if any fails, all are reverted and the attached NEAR comes back.
  * Returns the transaction hash.
  */
 export async function sendDeposit(
@@ -156,6 +157,13 @@ export async function sendDeposit(
     },
   ];
   if (contract === "wrap.near") {
+    // Register the sender first. wrap.near's near_deposit registers an unregistered caller by itself but
+    // keeps the storage fee out of the wrapped amount, so the ft_transfer of the full amountIn below would
+    // fail. No account_id = the caller (NEP-145); registration_only refunds it all if already registered.
+    actions.push({
+      type: "FunctionCall",
+      params: { methodName: "storage_deposit", args: { registration_only: true }, gas: "30000000000000", deposit: bounds.min },
+    });
     actions.push({ type: "FunctionCall", params: { methodName: "near_deposit", args: {}, gas: "10000000000000", deposit: q.amountIn } });
   }
   actions.push({
