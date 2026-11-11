@@ -82,7 +82,8 @@ export function Trader() {
 
       <div className="grid items-start gap-x-8 gap-y-12 lg:grid-cols-[minmax(0,1fr)_22.5rem]">
         <div className="min-w-0 space-y-6">
-          <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+          {/* Two fixed columns: a long style line wraps under the name instead of pushing the PnL below it. */}
+          <header className="grid grid-cols-1 items-end gap-x-8 gap-y-4 sm:grid-cols-[minmax(0,1fr)_auto]">
             <div className="min-w-0">
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <h1 className="min-w-0 font-serif text-4xl leading-tight tracking-[-0.02em] break-all sm:text-5xl">{t.name}</h1>
@@ -94,7 +95,7 @@ export function Trader() {
                 {t.id}
               </p>
             </div>
-            <div className="sm:text-right">
+            <div className="sm:justify-self-end sm:text-right">
               <div className="text-xs text-faint">30-day PnL</div>
               <div className={`num mt-1 text-5xl leading-none ${tone(t.pnl30dPct)}`}>{pct(t.pnl30dPct)}</div>
             </div>
