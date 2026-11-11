@@ -71,7 +71,14 @@ export function Trader() {
         <ArrowLeft size={16} strokeWidth={1.5} aria-hidden /> Leaderboard
       </Link>
 
-      {banner && <Notice>{banner}</Notice>}
+      {banner && (
+        <Notice>
+          <span>
+            {banner}
+            {profile.unlocked && !verifying && <span className="text-muted"> Next: Verify log, below the chart, checks this feed against NEAR.</span>}
+          </span>
+        </Notice>
+      )}
 
       <div className="grid items-start gap-x-8 gap-y-12 lg:grid-cols-[minmax(0,1fr)_22.5rem]">
         <div className="min-w-0 space-y-6">
@@ -120,7 +127,7 @@ export function Trader() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-medium">Trades</h2>
           {profile.unlocked && (
-            <Button size="sm" onClick={() => setVerifying((v) => !v)}>
+            <Button size="sm" variant={verifying ? "secondary" : "primary"} onClick={() => setVerifying((v) => !v)}>
               <ShieldCheck size={16} strokeWidth={1.5} aria-hidden /> Verify log
             </Button>
           )}
