@@ -81,7 +81,8 @@ export function Trader() {
                 <h1 className="min-w-0 font-serif text-4xl leading-tight tracking-[-0.02em] break-all sm:text-5xl">{t.name}</h1>
                 {t.simulated && <SimulatedBadge />}
               </div>
-              {t.style && <p className="mt-1 text-sm text-muted">{t.style}</p>}
+              {/* [overflow-wrap:anywhere]: a 64-char account id in the style line must wrap, not widen the page. */}
+              {t.style && <p className="mt-1 text-sm text-muted [overflow-wrap:anywhere]">{t.style}</p>}
               <p className="num mt-1 truncate text-xs text-faint" title={t.id}>
                 {t.id}
               </p>
