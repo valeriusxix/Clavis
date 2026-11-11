@@ -22,7 +22,7 @@ No wallet, no funds and no API keys needed. Every step says what to do and what 
    → A banner says "Demo account — key purchase simulated". The feed **unlocks** and shows every trade: time, side, amounts, USD values, and a SIMULATED or status badge.
 4. **Click "Verify log".**
    → Your browser rebuilds the trader's hash chain and compares it with the hash stored in the Clavis contract on NEAR testnet. You see a **green checklist** and a link to the on-chain transaction. Click **"Tamper test"** to edit one entry in your downloaded copy: the panel turns **red**.
-5. **Open the trader `TODO: real trader id`, then click "Buy key" → "Use demo account".**
+5. **Open the trader `real-trader`, then click "Buy key" → "Use demo account".**
    → These are **real mainnet confidential trades** (tiny amounts). Each row shows **"1Click-signed ✓"**, meaning the quote was signed by NEAR Intents' 1Click service.
    This demo trader's trades are published in the repo on purpose, so anyone can re-check the 1Click signatures. In normal use, trade feeds stay private until a key is bought.
    Real mode keeps each trade's output in the trader's Confidential Intents balance, so on-chain only the deposits are visible (see Trust model).
@@ -152,7 +152,7 @@ Fees are included automatically because we use what was actually received. Full 
 | Clavis contract | `clavis-app.testnet` (NEAR **testnet**) |
 | Example commit transaction | [`9tvg62ZL…`](https://nearvalidate.org/txns/9tvg62ZLVJdn2RHyp6ZdBPuvukQRCNWHCHQ2dExs3Bk6?network=testnet) (`commit_log` for `quiet-whale`, 23 trades) |
 | Trade execution | NEAR Intents **mainnet**. Intents has no testnet, so real trades used ≤ $4 each from a dev account. |
-| Real trader account | `TODO` |
+| Real trader account | `real-trader.clavis-app.testnet` on the leaderboard; trades paid from mainnet account [`32501ba1…47f8`](https://nearblocks.io/address/32501ba1f85d16a36316f63290827cb6dd58e59ba71cee23e5a6cbaf055647f8). 3 real confidential trades, committed in [`AYnh4jMY…`](https://nearvalidate.org/txns/AYnh4jMY41REihdvy5EwvhdLYWkFPg3hUGEbgRvQWj1u?network=testnet) |
 
 Simulated traders are labeled **SIMULATED** everywhere they appear. Each has a deterministic, seeded 45-day history and a testnet account id under the contract (for example `quiet-whale.clavis-app.testnet`). Their log hashes are on-chain only once those accounts are registered with the contract; "Trades committed" on each row shows how many trades the on-chain hash covers.
 
