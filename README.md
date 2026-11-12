@@ -8,32 +8,38 @@ Clavis (Latin for "key") is a private copy-trading app built on NEAR. Traders tr
 
 ---
 
-## 🧪 Test it in 3 minutes (for judges)
+## 🧪 How to test Clavis (about 2 minutes)
 
-No wallet, no funds and no API keys needed. Every step says what to do and what you should see.
+You need no wallet, no money and nothing installed. Each step says what to click, and the ✓ line says what you should see.
 
-### Option A: Hosted demo (fastest)
+1. **Open the live demo:** https://clavisapp.up.railway.app
+   ✓ The headline reads "Trades stay sealed. PnL stays public." Below it is the leaderboard, with each trader's profit and loss (PnL), win rate and key price. No individual trades are shown.
+2. **Look at the labels under each name.**
+   ✓ Five traders (`quiet-whale`, `zec-maxi`, `steady-eddie`, `scalp-sensei`, `degen-dora`) are marked **SIMULATED**: demo traders with made-up history. `real-trader` has no label. It made 3 small real trades (under $4 each) on NEAR mainnet through NEAR Intents.
+3. **Click `quiet-whale`.**
+   ✓ You see its profit chart and a blurred box: **"28 trades hidden"**.
+4. **Click "Buy key", then "Use demo account".**
+   ✓ A green banner says **"Demo account — key purchase simulated"**, and the blurred box becomes a list of every trade. The purchase is pretend, so no wallet is needed.
+5. **Click "Verify log".**
+   ✓ A green panel says **"Verified: this log matches its on-chain commitment"**, with a green key fitting a grey lock. Your browser just rebuilt the trader's trade log, where each entry is chained to the one before by a hash. It then compared the result with the value stored in the Clavis contract on NEAR testnet, which it read directly from NEAR, not from the Clavis server.
+6. **Click "Tamper test".**
+   ✓ The panel turns red: **"Verification failed"**. Changing a single trade breaks the match, so the published PnL can't be edited after the fact. Click "Undo tamper test" to go back.
+7. **Go back to the leaderboard, open `real-trader`, then click "Buy key" → "Use demo account".**
+   ✓ Three trades, each marked **SUCCESS** and **1Click-signed ✓**. That badge means NEAR Intents' 1Click service signed the trade's quote, and the quote was requested with confidentiality on.
+8. **Click "Verify log", then the "commit transaction" link in the green panel.**
+   ✓ A NEAR testnet explorer page opens with a `commit_log` call to `clavis-app.testnet`. Its `log_committed` event shows `trade_count` 3 and a `head_hash` starting `49e7b98d`, the same "Head" shown on the trader's page.
+9. *(Optional)* **Click "Copy" on one of `real-trader`'s trades, then "Get confidential quote".**
+   ✓ The Trade page opens with that trade's tokens filled in, and you get a live quote from NEAR Intents' 1Click API. "Dry run" stays on, so no money moves.
 
-1. **Open** https://clavisapp.up.railway.app
-   → You see the **Leaderboard**: traders ranked by 30-day PnL, with total PnL, win rate, trades committed and key price. Their trades are hidden.
-2. **Click any trader** (try `quiet-whale`).
-   → You see their equity curve and a blurred feed with a lock: **"N trades hidden"**.
-3. **Click "Buy key" → "Use demo account".**
-   → A banner says "Demo account — key purchase simulated". The feed **unlocks** and shows every trade: time, side, amounts, USD values, and a SIMULATED or status badge.
-4. **Click "Verify log".**
-   → Your browser rebuilds the trader's hash chain and compares it with the hash stored in the Clavis contract on NEAR testnet. You see a **green checklist** and a link to the on-chain transaction. Click **"Tamper test"** to edit one entry in your downloaded copy: the panel turns **red**.
-5. **Open the trader `real-trader`, then click "Buy key" → "Use demo account".**
-   → These are **real mainnet confidential trades** (tiny amounts). Each row shows **"1Click-signed ✓"**, meaning the quote was signed by NEAR Intents' 1Click service.
-   This demo trader's trades are published in the repo on purpose, so anyone can re-check the 1Click signatures. In normal use, trade feeds stay private until a key is bought.
-   Real mode keeps each trade's output in the trader's Confidential Intents balance, so on-chain only the deposits are visible (see Trust model).
-6. **Go to "Trade"**, leave **Dry run ON**, pick NEAR → USDC, enter `1`, click **"Get confidential quote"**.
-   → You see a **live quote from the NEAR Intents 1Click API**, requested with `confidentiality: "basic"`, with the amounts in USD and "signed by 1Click". No funds move.
-7. *(Optional)* Click **"Simulate fill"**.
-   → The simulated trade appears in your own trader profile (**"View in your trader profile →"**), labeled **SIMULATED**.
+Each browser gets its own demo account. "Reset demo" in the header starts a fresh one, and demo keys are deleted after 24 hours.
 
-Your demo account is yours alone: each browser gets its own (shown in the header as `demo-… (demo)` on wider screens), and **"Reset demo"** in the header starts a fresh one. Demo keys and simulated trades are deleted after 24 hours, a demo account can record up to 20 simulated trades, and demo profiles never appear on the leaderboard.
+**If something doesn't work**
 
-### Option B: Run it locally
+- **The page is blank or says "Cannot reach the Clavis API".** The server may be restarting. Wait 30 seconds and refresh.
+- **Verify log shows a grey panel with "could not reach the NEAR RPC".** The public NEAR testnet node was busy. Click "Re-verify" in the panel.
+- **"Get confidential quote" shows an error.** Pick tokens that live on NEAR (NEAR (wNEAR), USDC or USDT). Quotes to BTC, ETH, SOL or ZEC are rejected today. If the error says 1Click is unreachable, try again in a minute.
+
+## Run it locally
 
 Requirements: Node 22.22+ and pnpm.
 
@@ -45,7 +51,7 @@ pnpm install
 pnpm dev                    # web → http://localhost:5173 · API → http://localhost:8787
 ```
 
-Then follow steps 1–7 above at `http://localhost:5173`.
+Then follow the steps above at `http://localhost:5173`.
 
 Check everything automatically:
 
@@ -57,9 +63,9 @@ cd contracts/clavis && cargo test   # contract: unit tests + local NEAR sandbox 
 
 > `cargo test` needs Linux or macOS: the sandbox test runs a local NEAR node (`near-sandbox`), which has no Windows build, and the test dependencies compile NASM and OpenSSL code. On Windows, run it inside WSL.
 
-> `.env.example` points at the deployed testnet contract (`clavis-app.testnet`), so step 4 compares with it locally too; reading the contract needs no key. With `CLAVIS_CONTRACT_ID` left empty, step 4 recomputes the hash chain and marks the on-chain check as "skipped".
+> `.env.example` points at the deployed testnet contract (`clavis-app.testnet`), so "Verify log" compares with it locally too; reading the contract needs no key. With `CLAVIS_CONTRACT_ID` left empty, "Verify log" recomputes the hash chain and marks the on-chain check as "skipped".
 >
-> Without `ONECLICK_API_KEY`, step 6 returns a clearly labelled **PUBLIC** dry quote instead: 1Click only serves confidential quotes to requests with a partner key. The hosted demo has a key.
+> Without `ONECLICK_API_KEY`, "Get confidential quote" returns a clearly labelled **PUBLIC** dry quote instead: 1Click only serves confidential quotes to requests with a partner key. The hosted demo has a key.
 
 ---
 
@@ -133,7 +139,7 @@ Fees are included automatically because we use what was actually received. Full 
 - History that is committed can't be changed **silently**. The Clavis server refuses to commit a log whose first N entries don't hash to the head already on-chain. The contract can't check that by itself, and the Verify panel compares with the latest head only, so an operator who changed its own server could rewrite history and commit again. Every earlier head stays visible in the contract's `log_committed` events.
 - A 1Click signature covers the quote's assets, amounts, recipient and timestamp. It does **not** cover the confidentiality setting, so "1Click-signed ✓" alone does not prove a swap was confidential.
 - Only trades placed **through Clavis** count, so traders can't cherry-pick wins made elsewhere.
-- **Roadmap:** run the relay inside a TEE with remote attestation, then switch to **native Confidential Intents view keys** when NEAR ships them. That removes Clavis's operator from the trust path. The code already isolates this behind a `DisclosureAdapter` interface.
+- Taking Clavis's operator out of this trust path is planned; see the [Roadmap](#roadmap).
 
 ## Features
 
@@ -189,6 +195,12 @@ Copy `.env.example` to `.env`. Everything is optional in demo mode.
 - Only trades routed through Clavis are tracked.
 - Demo traders are simulated; one trader is real.
 - Confidential quotes need a 1Click partner key.
+
+## Roadmap
+
+- **TEE relay:** run the relay inside a TEE with remote attestation, so traders no longer have to trust Clavis's operator with their trade details.
+- **Native view keys:** switch to native Confidential Intents view keys when NEAR ships them. The code already isolates disclosure behind a `DisclosureAdapter` interface.
+- **Private copy-trading for perpetual futures, later.** NEAR already runs confidential perps at [perps.near.com](https://perps.near.com), powered by Hyperliquid. We haven't found a developer API that lets an app route private perps orders, so Clavis supports spot swaps through 1Click only today. Perps are planned once NEAR exposes a developer API for confidential perps. There is no date yet.
 
 ## Built with
 
