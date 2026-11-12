@@ -156,7 +156,7 @@ Fees are included automatically because we use what was actually received. Full 
 | Item | Value |
 |---|---|
 | Clavis contract | `clavis-app.testnet` (NEAR **testnet**) |
-| Example commit transaction | [`9tvg62ZL…`](https://nearvalidate.org/txns/9tvg62ZLVJdn2RHyp6ZdBPuvukQRCNWHCHQ2dExs3Bk6?network=testnet) (`commit_log` for `quiet-whale`, 23 trades) |
+| Example commit transaction | [`9tvg62ZL…`](https://nearvalidate.org/txns/9tvg62ZLVJdn2RHyp6ZdBPuvukQRCNWHCHQ2dExs3Bk6?network=testnet): an earlier `commit_log` for `quiet-whale`, covering its first 23 trades. Its latest head covers all 28, and "Verify log" reads it straight from the contract. |
 | Trade execution | NEAR Intents **mainnet**. Intents has no testnet, so real trades used ≤ $4 each from a dev account. |
 | Real trader account | `real-trader.clavis-app.testnet` on the leaderboard; trades paid from mainnet account [`32501ba1…47f8`](https://nearblocks.io/address/32501ba1f85d16a36316f63290827cb6dd58e59ba71cee23e5a6cbaf055647f8). 3 real confidential trades, committed in [`AYnh4jMY…`](https://nearvalidate.org/txns/AYnh4jMY41REihdvy5EwvhdLYWkFPg3hUGEbgRvQWj1u?network=testnet) |
 
